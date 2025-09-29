@@ -1,0 +1,5 @@
+#! /bin/bash
+
+#gzip -d Local_markdup_[% threads %]__ALN.bam.gz
+
+gatk Mutect2 -R /media/florian2/T7Shield/90-988164435/new_analyze/HOMO38_2.fa -I [% threads %].bam -max-mnp-distance 0 -O [% threads %]_GATK.vcf.gz
