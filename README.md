@@ -5,9 +5,11 @@
 >In addition, the cancer genome was explored through whole-exome sequencing (WES) to extract SNPs, InDels, and CNVs as part of the following analyses:
   -Whole-exome pipeline analysis
   -CNV, SNP, and InDel extraction
+>In addition all scripts used for results vizualization are also reported
 
 
-Figure generation
+## Double-capture pipeline data visualization
+
 ## Whole-exome pipeline analysis
 Raw FASTQ files were successively processed through deduplication using **Clumpify**, followed by **adapter trimming** and **quality filtering** with **BBDuk**. Read quality was then assessed using **FastQC**.
 
@@ -238,7 +240,281 @@ A Panel of normal as been first built by the following script commande :
 
 ```
 
-## Double-capture pipeline data visualization
-
 ## Figure generation
+
+Based on 
+
+```R
+#!/usr/bin/env Rscript
+
+# Clean environment
+rm(list = ls())
+# Note: avoid explicit setwd() in scripts; consider passing paths as arguments or using here::here()
+# setwd("/media/florian2/T7Shield1/Projet_Liege/")
+
+library(reshape)
+library(ggplot2)
+library(reshape2)
+library(grid)
+library(randomcoloR)
+library(magrittr)
+library(ggpubr)
+library(plotly)
+library(ggrepel)
+library(wesanderson)
+library(RColorBrewer)
+library(Formula)
+library(lattice)
+library(survival)
+library(Hmisc)
+library(ggsignif)
+library(dplyr)
+library(forcats)
+library(lsa)
+library(scales)
+library(Rcmdr)
+library(car)
+library(ggpmisc)
+library(tidyr)
+library(paletteer)
+library(circlize)
+
+# Clear any existing circular plot state
+circos.clear()
+if (dev.cur() > 1) dev.off()
+
+# 1. Load and merge data
+inte <- read.delim("./Inte.csv", header = TRUE, sep = "\t")
+summary_df <- read.delim("./Resume_paris.csv", header = TRUE, sep = "\t")
+combined_inte <- merge(summary_df, inte, by.x = "best_capture", by.y = "sample")
+
+clinical <- read.delim("./Datas_cliniques.txt", header = TRUE, sep = "\t")
+combined <- merge(combined_inte, clinical,
+                  by.x = "paire", by.y = "Paire",
+                  all = FALSE)
+
+# Optionally inspect
+# colnames(combined)
+
+# Filter / annotate
+combined_sel <- combined %>%
+  group_by(paire, localisation, chr_position) %>%
+  mutate(n_types = n_distinct(type_carcinome)) %>%
+  ungroup()
+
+# Note: corrected_Sample is not defined here; ensure it's loaded earlier
+if (!exists("corrected_Sample")) {
+  stop("corrected_Sample object not found — load it before subsetting.")
+}
+sample_ADC <- corrected_Sample %>% filter(type_carcinome == "ADC")
+sample_SCC <- corrected_Sample %>% filter(type_carcinome != "ADC")
+
+# 2. Read bed / depth / gene information
+sample_insertions <- read.delim("./Sample_insertions.csv", header = TRUE, sep = ",")
+depth_samples <- read.delim("./Full_hpv_coverage.txt", header = TRUE) %>%
+  na.omit()
+
+gene_infos <- read.delim("./Full_infos.gb", header = FALSE)
+
+unique_pairs <- unique(depth_samples$New)
+palette_colors <- paletteer_d("MoMAColors::Klein")
+
+# Helper function: map to cytoband
+get_cytoband <- function(chr, pos, cytoband_df) {
+  hit <- cytoband_df %>%
+    filter(V1 == chr, pos >= V2, pos < V3)
+  if (nrow(hit) > 0) return(hit$V4[1])
+  else return(NA_character_)
+}
+
+# 3. Loop over pairs for full-track circular plots
+for (pair_id in unique_pairs) {
+  
+  # Determine HPV genome scale based on ADC data for this pair
+  pos_ADC <- depth_samples %>%
+    filter(New == pair_id, Cancer == "ADC") %>%
+    pull(Position)
+  if (length(pos_ADC) == 0) next
+  HPV_size <- max(pos_ADC)
+  
+  # Build bed data for ADC and SCC tracks
+  df_ADC <- depth_samples %>%
+    filter(New == pair_id, Cancer == "ADC") %>%
+    transmute(chr = "chrHPV",
+              start = Position * (3.4e9 / HPV_size),
+              stop  = start + (3.4e9 / HPV_size),
+              value = Depht)
+  df_SCC <- depth_samples %>%
+    filter(New == pair_id, Cancer == "SCC") %>%
+    transmute(chr = "chrHPV",
+              start = Position * (3.4e9 / HPV_size),
+              stop  = start + (3.4e9 / HPV_size),
+              value = Depht)
+  
+  # Set column names
+  colnames(df_ADC) <- c("chr", "start", "stop", "value")
+  colnames(df_SCC) <- c("chr", "start", "stop", "value")
+  
+  # Cytoband: human + HPV
+  human_cytoband <- read.cytoband(species = "hg38")$df
+  HPV_cyto <- tibble::tibble(V1 = "chrHPV",
+                             V2 = 0,
+                             V3 = 3.4e9,
+                             V4 = "q12",
+                             stain = "Blue")
+  colnames(HPV_cyto) <- colnames(human_cytoband)
+  cytoband <- bind_rows(human_cytoband, HPV_cyto) %>%
+    filter(V1 != "chrY")
+  
+  chromosome_index <- c(paste0("chr", c(1:22, "X")), "chrHPV")
+  
+  # Subset insertion samples
+  seqid_ADC <- depth_samples %>%
+    filter(New == pair_id, Cancer == "ADC") %>%
+    pull(SeqId) %>%
+    unique()
+  seqid_SCC <- depth_samples %>%
+    filter(New == pair_id, Cancer == "SCC") %>%
+    pull(SeqId) %>%
+    unique()
+  
+  sampleADC <- sample_insertions %>% filter(sample %in% seqid_ADC)
+  sampleSCC <- sample_insertions %>% filter(sample %in% seqid_SCC)
+  
+  # Build linking beds
+  bed1 <- sampleADC %>% transmute(chr = chr,
+                                  start = chr_position,
+                                  end   = chr_position + 2e6)
+  bed2 <- sampleADC %>% transmute(chr = "chrHPV",
+                                  start = position * (3.4e9 / HPV_size),
+                                  end   = (position + 50) * (3.4e9 / HPV_size))
+  bed3 <- sampleSCC %>% transmute(chr = chr,
+                                  start = chr_position,
+                                  end   = chr_position + 2e6)
+  bed4 <- sampleSCC %>% transmute(chr = "chrHPV",
+                                  start = position * (3.4e9 / HPV_size),
+                                  end   = (position + 50) * (3.4e9 / HPV_size))
+  
+  bed5 <- tibble::tibble(chr = "chrHPV",
+                         start = rep(1, nrow(bed2)),
+                         end   = rep(3.4e9, nrow(bed2)))
+  
+  # Map gene annotations on HPV
+  hpv_strain <- sampleADC %>% pull(Strain) %>% unique()
+  hpv_genes <- gene_infos %>% filter(V1 == hpv_strain)
+  HPV_cyto2 <- hpv_genes %>%
+    transmute(V1 = V4,
+              V2 = V2 * (3.4e9 / HPV_size),
+              V3 = V3 * (3.4e9 / HPV_size),
+              V4 = "q12",
+              stain = palette_colors[1:nrow(hpv_genes)])
+  colnames(HPV_cyto2) <- colnames(human_cytoband)
+  
+  # Prepare output file
+  out_pdf <- paste0("circular_plot_pair_", pair_id, "_ADC.pdf")
+  pdf(out_pdf)
+  
+  # Prepare alternating y-coordinates for annotation
+  HPV_cyto2 <- HPV_cyto2 %>%
+    arrange(V2) %>%
+    mutate(row_id = row_number(),
+           y1 = if_else(row_id %% 2 == 0, 0, 0.5),
+           y2 = if_else(row_id %% 2 == 0, 0.5, 1)) %>%
+    select(-row_id)
+  
+  # Initialize circular plot
+  circos.clear()
+  circos.par(start.degree = 90,
+             gap.after = c(rep(1, 22), 4, 4))
+  circos.initializeWithIdeogram(cytoband, plotType = NULL,
+                               chromosome.index = chromosome_index)
+  
+  # ADC track
+  circos.genomicTrackPlotRegion(df_ADC, ylim = c(0, max(df_ADC$value, na.rm = TRUE)),
+    panel.fun = function(region, value, ...) {
+      circos.genomicLines(region, value,
+                          area = TRUE,
+                          col = "#FFCCCC",
+                          border = "#FF6666",
+                          lwd = 0.5, ...)
+    }, bg.border = NA)
+  
+  # SCC segments & track
+  if (nrow(df_SCC) > 0) {
+    circos.segments(bed4$start, 0, bed4$start, max(df_SCC$value, na.rm = TRUE))
+    circos.genomicTrackPlotRegion(df_SCC, ylim = c(0, max(df_SCC$value, na.rm = TRUE)),
+      panel.fun = function(region, value, ...) {
+        circos.genomicLines(region, value,
+                            area = TRUE,
+                            col = "#CCE5FF",
+                            border = "#3399ff",
+                            lwd = 0.5, ...)
+      }, bg.border = NA)
+    circos.segments(bed4$start, 0, bed4$start, max(df_SCC$value, na.rm = TRUE))
+  }
+  
+  # Ideogram and text tracks
+  circos.track(ylim = c(0, 0.001),
+               panel.fun = function(x, y) {
+                 circos.text(CELL_META$xcenter, CELL_META$ylim[2] + mm_y(2),
+                             gsub(".*chr", "", CELL_META$sector.index),
+                             cex = 0.6, niceFacing = TRUE, facing = "outside")
+               }, track.height = mm_h(1), cell.padding = c(0, 0, 0, 0),
+               bg.border = NA)
+  circos.genomicIdeogram(cytoband = cytoband, track.height = 0.1)
+  
+  # Draw gene rectangles and labels
+  for (i in seq_len(nrow(HPV_cyto2))) {
+    circos.rect(sector.index = "chrHPV",
+                xleft = HPV_cyto2$V2[i],
+                ybottom = HPV_cyto2$y1[i],
+                xright = HPV_cyto2$V3[i],
+                ytop = HPV_cyto2$y2[i],
+                col = HPV_cyto2$stain[i])
+    circos.text((HPV_cyto2$V2[i] + HPV_cyto2$V3[i]) / 2,
+                HPV_cyto2$y1[i] + 0.25,
+                HPV_cyto2$V1[i],
+                cex = 0.5, col = "white",
+                facing = "inside", niceFacing = TRUE)
+  }
+  
+  # Links between human and HPV
+  circos.genomicLink(bed1, bed5, col = NA, border = "#696969")
+  circos.genomicLink(bed5, bed5, col = "white", border = "white", lwd = 1.8)
+  
+  # Annotations
+  text(0, 1.05, paste("Pair", pair_id), cex = 1.5)
+  text(0.05, 0.84, "ADC", cex = 1, col = "#FF6666")
+  text(0.05, 0.64, "SCC", cex = 1, col = "#3399ff")
+  text(-0.2, 0.08, "Insertion:", cex = 1.2, col = "#696969")
+  
+  # Cytoband label counts
+  bed1_unique <- bed1 %>% distinct(chr, start)
+  bed1_unique <- bed1_unique %>%
+    mutate(cytoband = mapply(get_cytoband, chr, start,
+                             MoreArgs = list(cytoband_df = human_cytoband)))
+  bed1_summary <- bed1_unique %>%
+    group_by(cytoband) %>%
+    summarise(n_sites = n(), .groups = "drop")
+  for (j in seq_len(nrow(bed1_summary))) {
+    y0 <- j - 1
+    lab <- if (bed1_summary$n_sites[j] > 1) {
+      sprintf("%d sites in %s locus", bed1_summary$n_sites[j], bed1_summary$cytoband[j])
+    } else {
+      sprintf("%d site in %s locus", bed1_summary$n_sites[j], bed1_summary$cytoband[j])
+    }
+    text(-0.2, -0.01 - (y0 * 0.06), lab, cex = 1, col = "#696969")
+  }
+  
+  # HPV label
+  text(-0.6, 0.85, gsub("_", "-", hpv_strain), cex = 1.25, col = "gray")
+  
+  # Finish
+  circos.clear()
+  dev.off()
+}
+
+# 4. (Optional) Small circular graphs & aggregated bed table
+# ... (You can refactor the second big loop similarly) ...
+```
 
