@@ -143,25 +143,3 @@ for i in $(ls *R1_001.fastq* | grep -v "md5" | grep -v "dedup" | sed -e 's/R1_00
     echo "#######################################################"
 done
 
-
-WORKSPACE="pon_db2"
-
-# Étape 1 : générer les scripts Reformat_PON_*.sh à partir des BAMs CTR
-for bam in Local_markdup_*CTR*_ALN_sample_final.bam; do
-    sample=$(basename "$bam" .bam)
-    echo "Processing $sample"
-    tpage --define threads="$sample" ./Reformat_PON.tt > "Reformat_PON_${sample}.sh"
-done
-chmod a+x *.sh
-# Étape 2 : exécuter les scripts générés en parallèle
-# (limite à 4 jobs en parallèle → change si tu veux)
-ls Reformat_PON_*.sh | xargs -n 1 -P 4 bash
-
-# Étape 3 : créer la liste des VCFs générés
-vcf_list=$(ls Local_markdup_*CTR*__ALN_GATK.vcf.gz | sed 's/^/-V /' | tr '\n' ' ')
-
-# Étape 4 : lancer GenomicsDBImport automatiquement avec tous les VCF
-gatk GenomicsDBImport \
-    -R "$REFERENCE" \
-    --genomicsdb-workspace-path "$WORKSPACE" \
-    $vcf_list
