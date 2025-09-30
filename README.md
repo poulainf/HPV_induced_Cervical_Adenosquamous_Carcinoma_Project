@@ -9,7 +9,7 @@
 
 
 ## Double-capture pipeline data visualization
-
+Fastq from HPV genome double capture hase been treated by [ViroCapt](https://github.com/maximewack/viroCapt). Briefly ViroCapt consist 
 ## Whole-exome pipeline analysis
 Raw FASTQ files were successively processed through deduplication using **Clumpify**, followed by **adapter trimming** and **quality filtering** with **BBDuk**. Read quality was then assessed using **FastQC**.
 
