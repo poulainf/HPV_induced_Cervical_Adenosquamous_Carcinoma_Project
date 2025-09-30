@@ -1,5 +1,13 @@
 # Whole-exome pipeline analysis / CNV, SNP, and InDel extraction / Double-capture data visualization / Figure generation
+>The following pipeline complements the Materials and Methods section of the "..." research study.
+>These scripts were designed to detect integrated HPV genome sequences from FFPE-fixed adenosquamous carcinoma samples.
+   -Double-capture data visualization
+>In addition, the cancer genome was explored through whole-exome sequencing (WES) to extract SNPs, InDels, and CNVs as part of the following analyses:
+  -Whole-exome pipeline analysis
+  -CNV, SNP, and InDel extraction
 
+
+Figure generation
 ## Whole-exome pipeline analysis
 Raw FASTQ files were successively processed through deduplication using **Clumpify**, followed by **adapter trimming** and **quality filtering** with **BBDuk**. Read quality was then assessed using **FastQC**.
 
