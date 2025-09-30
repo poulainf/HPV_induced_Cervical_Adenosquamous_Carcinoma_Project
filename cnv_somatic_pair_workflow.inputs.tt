@@ -1,0 +1,21 @@
+{
+  "CNVSomaticPairWorkflow.tumor_bam_idx": "/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_[% TEST %]__ALN_sample_final.bai",
+  "CNVSomaticPairWorkflow.normal_bam": "/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_[% CTR %]__ALN_sample_final.bam",
+  "CNVSomaticPairWorkflow.normal_bam_idx": "/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_[% CTR %]__ALN_sample_final.bai",
+  "CNVSomaticPairWorkflow.tumor_bam": "/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_[% TEST %]__ALN_sample_final.bam",
+  
+  "CNVSomaticPairWorkflow.ref_fasta": "/home/florian2/Desktop/gatk-workflows/inputs/Homo_sapiens.GRCh38.chr.fa",
+  "CNVSomaticPairWorkflow.ref_fasta_fai":"/home/florian2/Desktop/gatk-workflows/inputs/Homo_sapiens.GRCh38.chr.fa.fai",
+  "CNVSomaticPairWorkflow.ref_fasta_dict":"/home/florian2/Desktop/gatk-workflows/inputs/Homo_sapiens.GRCh38.chr.dict",
+  "CNVSomaticPairWorkflow.common_sites":"/home/florian2/Desktop/gatk-workflows/inputs/Selected_0.02_Selected_chr_0.01_gnomad.exomes.v4.1.vcf",
+  "CNVSomaticPairWorkflow.read_count_pon": "/home/florian2/Desktop/gatk-workflows/inputs/wes-do-gc.pon.hdf5", 
+  "CNVSomaticPairWorkflow.intervals": "/home/florian2/Desktop/gatk-workflows/inputs/targets_C.preprocessed.interval_list",
+  "CNVSomaticPairWorkflow.blacklist_intervals": "/home/florian2/Desktop/gatk-workflows/inputs/CNV_and_centromere_blacklist.hg38liftover.list",
+  "CNVSomaticPanelWorkflow.gatk_docker": "broadinstitute/gatk:4.6.1.0",
+
+  "CNVSomaticPairWorkflow.is_run_funcotator": "true",
+  "CNVSomaticPairWorkflow.is_run_oncotator": "true",
+  "CNVSomaticPairWorkflow.funcotator_ref_version": "hg38",
+  "CNVSomaticPairWorkflow.funcotator_data_sources_tar_gz": "/home/florian2/Desktop/gatk-workflows/inputs/funcotator_dataSources.v1.6.20190124s.tar.gz",
+  "CNVSomaticPairWorkflow.funcotator_transcript_selection_list": "/home/florian2/Desktop/gatk-workflows/inputs/transcriptList.exact_uniprot_matches.AKT1_CRLF2_FGFR1.txt"
+}
