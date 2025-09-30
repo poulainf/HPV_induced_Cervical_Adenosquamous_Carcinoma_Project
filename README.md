@@ -9,143 +9,166 @@ All steps were performed by running `Fastq_Alignement.sh` script on the raw FAST
 
 ```bash
 
-# Define paths to tools and reference files
-BBDUK="/home/florian2/bin/BBMap_39.01/bbmap/bbduk.sh"
-CLUMPIFY="/home/florian2/bin/bbmap/clumpify.sh"
+# === CONFIG ===
+THREADS=37
+# THREADS2 n’est pas vraiment utilisé, on peut le retirer ou le garder pour GATK usage
+THREADS2=23
+
+BBMAP_ROOT="/home/florian2/bin/BBMap_39.01/bbmap"
+BBDUK="${BBMAP_ROOT}/bbduk.sh"
+CLUMPIFY="${BBMAP_ROOT}/clumpify.sh"
+
 PICARD="java -jar /home/florian2/bin/picard.jar"
 REFERENCE="./Homo_sapiens.GRCh38.chr.fa"
 ADAPTORS="./Adaptor.fa"
-BED_FILE="./Twist_Comprehensive_Exome_Covered_Targets_hg38.bed.gz"
-FASTQC="fastqc" # Path to FastQC (ensure it's installed and in your PATH)
+BED_FILE="./exome_extended_130.bed.gz"
+FASTQC="fastqc"
+WORKSPACE="pon_db2"
+SNPS_VCF="./1000G_phase1.snps.high_confidence.hg38.filtered.vcf.gz"
+INDELS_VCF="./Mills_and_1000G_gold_standard.indels.hg38.filtered.vcf.gz"
 
-# Create FastQC output directory if it doesn't already exist
-mkdir -p ./fastqc_reports/
+BBDUK_XMX="8g"
+CLUMPIFY_XMX="24g"
 
-# Process each sample
-for i in $(ls *R1_001.fastq* | grep -v "md5" | grep -v "dedup" | sed -e 's/R1_001.fastq.gz//' -e 's/R1_001.fastq//'); do
-    echo "################### Start ${i} #############################"
+mkdir -p fastqc_reports logs tmp
 
-	if [ ! -f "Local_markdup_${i}_ALN.bam" ]; then
-	
-		if [ ! -f "clean1_${i}1.fq.gz" ] &&  [ ! -f "clean2_${i}2.fq.gz" ]; then
-		# Step 1: Decompress input FASTQ files
-		if [ ! -f "${i}R1_001.fastq" ] && [ ! -f "dedup2_${i}R2_001.fastq.gz" ]; then
-			echo "Decompressing ${i}R1_001.fastq.gz and ${i}R2_001.fastq.gz"
-			gunzip -k "${i}R1_001.fastq.gz" "${i}R2_001.fastq.gz"
-		else
-			echo "Decompressed FASTQ files for ${i} already exist. Skipping step."
-		fi
+# Préparer chrom_list.txt une seule fois (hors de la boucle)
+if [ ! -f chrom_list.txt ]; then
+  echo "Generating chrom_list.txt from BED file..."
+  zcat "${BED_FILE}" | cut -f1 | sort -u > chrom_list.txt
+fi
 
-		# Step 2: Deduplication with Clumpify
-		if [ ! -f "dedup1_${i}R1_001.fastq" ] && [ ! -f "dedup2_${i}R2_001.fastq.gz" ]; then
-			echo "Running Clumpify for ${i}"
-			$CLUMPIFY in="${i}R1_001.fastq" in2="${i}R2_001.fastq" \
-				out="dedup1_${i}R1_001.fastq" out2="dedup2_${i}R2_001.fastq" dedupe
-		else
-			echo "Deduplicated files for ${i} already exist. Skipping step."
-		fi
+# === PIPELINE PAR ÉCHANTILLON ===
+for r1 in *R1_001.fastq.gz; do
+    [ -e "$r1" ] || { echo "No *R1_001.fastq.gz found. Exiting."; break; }
 
-		# Step 2b: Remove decompressed FASTQ to save space
-		if [ -f "${i}R1_001.fastq" ] && [ -f "${i}R2_001.fastq" ]; then
-			echo "Removing raw decompressed FASTQ files for ${i} to save space"
-			rm -f "${i}R1_001.fastq" "${i}R2_001.fastq"
-		fi
-		
-		
-		# Step 3: Adapter trimming and quality filtering with BBDuk
-		if [ ! -f "clean1_${i}1.fq" ] &&  [ ! -f "clean2_${i}2.fq.gz" ]; then
-			if [  -f "dedup1_${i}R1_001.fastq.gz" ] && [ ! -f "dedup2_${i}R2_001.fastq.gz" ]; then
-				echo "Decompressing dedup1_${i}R1_001.fastq.gz and dedup2_${i}R2_001.fastq.gz"
-				gunzip -k "dedup1_${i}R1_001.fastq.gz" "dedup2_${i}R2_001.fastq.gz"
-			fi
-			
-			echo "Running BBDuk for ${i}"
-			$BBDUK in1="dedup1_${i}R1_001.fastq" in2="dedup2_${i}R2_001.fastq" \
-				out1="clean1_${i}1.fq" out2="clean2_${i}2.fq" \
-				ref=$ADAPTORS ktrim=r k=12 mink=10 hdist=1 tpe tbo minlength=50 maxlength=150 qtrim=rl trimq=20
-				
-				
-			if [  -f "dedup1_${i}R1_001.fastq.gz" ] && [ ! -f "dedup2_${i}R2_001.fastq.gz" ]; then
-				echo "rm dedup1_${i}R1_001.fastq.gz and dedup2_${i}R2_001.fastq.gz"
-				rm -f "dedup1_${i}R1_001.fastq" "dedup2_${i}R2_001.fastq"
-			fi
-		else
-			echo "Cleaned FASTQ files for ${i} already exist. Skipping step."
-		fi
+    i="${r1%%R1_001.fastq.gz}"
+    r2="${i}R2_001.fastq.gz"
 
-		# Compress deduplicated and cleaned FASTQ files
-		for file in "dedup1_${i}R1_001.fastq" "dedup2_${i}R2_001.fastq" "clean1_${i}1.fq" "clean2_${i}2.fq"; do
-			if [ -f "$file" ]; then
-				echo "Compressing $file"
-				gzip "$file"
-			else
-				echo "File $file is already compressed or missing. Skipping compression."
-			fi
-		done
-		fi
-	        # Step 4: Alignment with BWA MEM
+    echo "=============================="
+    echo ">>> Starting sample: $i"
+    echo "=============================="
+
+    # ---------------------------
+    # STEP 1: Clumpify + trimming streaming
+    # ---------------------------
+    if [ ! -f "clean1_${i}.fq.gz" ] || [ ! -f "clean2_${i}.fq.gz" ]; then
+        echo "[Step 1] Clumpify + BBDuk streaming"
+        "${CLUMPIFY}" -Xmx${CLUMPIFY_XMX} \
+            in="${r1}" in2="${r2}" \
+            dedupe=t \
+            out=stdout.fq \
+            t="${THREADS}" \
+            2> "logs/${i}_clumpify.log" \
+        | "${BBDUK}" -Xmx${BBDUK_XMX} \
+            in=stdin.fq int=t \
+            out1="clean1_${i}.fq.gz" out2="clean2_${i}.fq.gz" \
+            ref="${ADAPTORS}" ktrim=r k=12 mink=10 hdist=1 tpe=t tbo=t minlength=50 maxlength=150 qtrim=rl trimq=20 \
+            t="${THREADS}" \
+            2> "logs/${i}_bbduk.log"
+    else
+        echo "[Step 1] clean1_${i}.fq.gz & clean2_${i}.fq.gz already exist. Skipping."
+    fi
+
+    # ---------------------------
+    # STEP 2: FastQC on cleaned FASTQ
+    # ---------------------------
+    if [ ! -f "fastqc_reports/clean1_${i}_fastqc.html" ]; then
+        echo "[Step 2] Running FastQC"
+        "${FASTQC}" -t "${THREADS}" "clean1_${i}.fq.gz" "clean2_${i}.fq.gz" -o fastqc_reports/ \
+            2> "logs/${i}_fastqc.log"
+    else
+        echo "[Step 2] FastQC already done for ${i}"
+    fi
+
+    # ---------------------------
+    # STEP 3 → 4 combinés : BWA + markdup via samtools pipeline
+    # ---------------------------
+    if [ ! -f "Local_markdup_${i}_ALN.bam" ]; then
+        echo "[Step 3–4] BWA MEM + fixmate + markdup (samtools)"
+
+        # 3.1 Align to SAM
         echo "Running BWA MEM for ${i}"
-        bwa mem -t 35 \
+        bwa mem -t "${THREADS}" \
             -R "@RG\tID:${i}\tSM:${i}\tPL:ILLUMINA\tLB:lib1\tPU:unit1" \
-            "$REFERENCE" "clean1_${i}1.fq.gz" "clean2_${i}2.fq.gz" \
+            "$REFERENCE" "clean1_${i}.fq.gz" "clean2_${i}.fq.gz" \
             > "${i}_ALN.sam"
 
-        # Step 5: Convert SAM to BAM sorted by query name (required for fixmate)
+        # 3.2 Convert SAM -> BAM sorted by name
         echo "Sorting SAM by read name for ${i}"
-        samtools view -@ 4 -Sb "${i}_ALN.sam" | samtools sort -n -@ 4 -o "${i}_querysort.bam"
+        samtools view -@ 12 -Sb "${i}_ALN.sam" | samtools sort -n -@ 12 -o "${i}_querysort.bam"
         rm -f "${i}_ALN.sam"
 
-        # Step 6: Run fixmate to add ms/mc tags
+        # 4.1 fixmate
         echo "Running fixmate for ${i}"
-        samtools fixmate -m -@ 4 "${i}_querysort.bam" "${i}_fixmate.bam"
+        samtools fixmate -m -@ 8 "${i}_querysort.bam" "${i}_fixmate.bam"
         rm -f "${i}_querysort.bam"
 
-        # Step 7: Sort BAM by position
+        # 4.2 Sort by position
         echo "Sorting fixmate BAM by position for ${i}"
-        samtools sort -@ 4 -o "${i}_positionsort.bam" "${i}_fixmate.bam"
+        samtools sort -@ 12 -o "${i}_positionsort.bam" "${i}_fixmate.bam"
         rm -f "${i}_fixmate.bam"
 
-        # Step 8: Mark duplicates and index final BAM
+        # 4.3 Mark duplicates + index
         echo "Running markdup for ${i}"
-        samtools markdup -@ 4 "${i}_positionsort.bam" "Local_markdup_${i}_ALN.bam"
-        samtools index -@ 4 "Local_markdup_${i}_ALN.bam"
+        samtools markdup -@ 8 "${i}_positionsort.bam" "Local_markdup_${i}_ALN.bam"
+        samtools index -@ 8 "Local_markdup_${i}_ALN.bam"
         rm -f "${i}_positionsort.bam"
-        
-   
-	NAME=$(echo $i | perl -pe 's/.+markdup_(.+)__ALN.bam/$1/');
-    # Step 9: Depth coverage calculation with mosdepth
-    if [ ! -f "${NAME}.regions.bed.gz" ]; then
-        echo "Calculating depth coverage with mosdepth for ${i}"
-       
-        mosdepth -n --by $BED_FILE $NAME "Local_markdup_${i}_ALN.bam"
+
     else
-        echo "Depth coverage for ${i} already calculated. Skipping step."
+        echo "[Step 3–4] Markdup BAM for ${i} already exists. Skipping."
     fi
 
-    # Step 10: FastQC on final BAM file
-    if [ ! -f "./fastqc_reports/Local_markdup_${i}_ALN_fastqc.html" ]; then
-        echo "Running FastQC for: Local_markdup_${i}_ALN.bam"
-        $FASTQC "Local_markdup_${i}_ALN.bam" -o ./fastqc_reports/
+    # ---------------------------
+    # STEP 5: GATK BQSR (Parallel per chromosome)
+    # ---------------------------
+    if [ ! -f "Local_markdup_${i}_ALN_final.bam" ]; then
+        echo "[Step 5] GATK BaseRecalibrator + ApplyBQSR"
+
+        BAM="Local_markdup_${i}_ALN.bam"
+        mkdir -p bqsr_tables
+
+        cat chrom_list.txt | parallel -j ${THREADS} "
+          echo 'Processing chromosome {} for ${i}'
+          gatk BaseRecalibrator \
+            -R ${REFERENCE} \
+            -I ${BAM} \
+            --known-sites ${SNPS_VCF} \
+            --known-sites ${INDELS_VCF} \
+            -L {} \
+            -O bqsr_tables/${i}_recal_{}.table \
+            2> logs/${i}_bqsr_chr_{}.log
+        "
+
+        recal_inputs=$(for c in $(cat chrom_list.txt); do echo -n "-I bqsr_tables/${i}_recal_${c}.table "; done)
+
+        gatk GatherBQSRReports \
+            ${recal_inputs} \
+            -O "${i}_recal_data.table" \
+            2> "logs/${i}_bqsr_merge.log"
+
+        gatk ApplyBQSR \
+            -R "${REFERENCE}" \
+            -I "${BAM}" \
+            --bqsr-recal-file "${i}_recal_data.table" \
+            -O "Local_markdup_${i}_ALN_final.bam" \
+            2> "logs/${i}_bqsr_apply.log"
     else
-        echo "FastQC for ${i} already completed. Skipping step."
+        echo "[Step 5] BQSR already done for ${i}"
     fi
 
-    echo "Sample ${i} processed successfully."
-    
-    
-    # Step 9: FastQC on final BAM file
-    
-   if [ ! -f "Local_markdup_${i}_ALN_sample_final.bam" ]; then
-   gatk BaseRecalibrator -I Local_markdup_${i}_ALN.bam -R $REFERENCE \
-	--known-sites 1000G_phase1.snps.high_confidence.hg38.vcf.gz --known-sites Mills_and_1000G_gold_standard.indels.hg38.vcf.gz \
-	  -O Local_markdup_${i}_recal_data.table
-	  
-	gatk ApplyBQSR -R $REFERENCE -I Local_markdup_${i}_ALN.bam --bqsr-recal-file Local_markdup_${i}_recal_data.table -O Local_markdup_${i}_ALN_sample_final.bam
+    # ---------------------------
+    # STEP 6: Coverage (mosdepth)
+    # ---------------------------
+    if [ ! -f "${i}.regions.bed.gz" ]; then
+        echo "[Step 6] Running mosdepth"
+        mosdepth -t "${THREADS}" -n --by "${BED_FILE}" "${i}" "Local_markdup_${i}_ALN_final.bam" \
+            2> "logs/${i}_mosdepth.log"
     else
-		echo "FastQC for ${i} already completed. Skipping step."
+        echo "[Step 6] mosdepth already run for ${i}"
     fi
-    echo "#######################################################"
 
+    echo ">>> Sample ${i} done."
 done
 ```
 
@@ -181,7 +204,7 @@ gatk GenomicsDBImport \
 
 ```
 
-Next paire of Normal and cancer where analyzed by mutect2 gatk. For each sammple a job submission files where generated to run on HCPs on slurm environment.  
+The Pon were next used with mutect2 command Next paire of normal and cancer where analyzed by mutect2 gatk. For each sammple a job submission files where generated to run on HCPs on slurm environment.  
 
 ## CNVs calling
 Copy variation has been achieved based on [GATK somatic copy number variation calling pipeline](https://gatk.broadinstitute.org/hc/en-us/articles/360035535892-Somatic-copy-number-variant-discovery-CNVs)
@@ -190,17 +213,15 @@ A Panel of normal as been first built by the following script commande :
 ```json
 
 {
-  "CNVSomaticPanelWorkflow.normal_bams": ["/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_33CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_39CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_42CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_45CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_50CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_51CTR2__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_53CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_55CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_71CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_74CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_75CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_78CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_80CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_95CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_96CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_97CTR3__ALN_sample_final.bam"
-
-],
+  "CNVSomaticPanelWorkflow.normal_bams": ["/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_33CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_39CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_42CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_45CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_50CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_51CTR2__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_53CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_55CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_71CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_74CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_75CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_78CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_80CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_95CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_96CTR__ALN_sample_final.bam","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_97CTR3__ALN_sample_final.bam"],
  "CNVSomaticPanelWorkflow.normal_bais": ["/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_33CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_39CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_42CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_45CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_50CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_51CTR2__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_53CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_55CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_71CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_74CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_75CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_78CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_80CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_95CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_96CTR__ALN_sample_final.bai","/home/florian2/Desktop/BAM_dataset/input/Filtred_BAMs/Local_markdup_97CTR3__ALN_sample_final.bai"],
  "CNVSomaticPanelWorkflow.pon_entity_id": "wes-do-gc",
-  "CNVSomaticPanelWorkflow.ref_fasta_dict": "/home/florian2/Desktop/gatk-workflows/inputs/HOMO38_2.dict",
-  "CNVSomaticPanelWorkflow.ref_fasta": "/home/florian2/Desktop/gatk-workflows/inputs/HOMO38_2.fa",
-  "CNVSomaticPanelWorkflow.ref_fasta_fai": "/home/florian2/Desktop/gatk-workflows/inputs/HOMO38_2.fa.fai",
+  "CNVSomaticPanelWorkflow.ref_fasta_dict": "/home/florian2/Desktop/gatk-workflows/inputs/Homo_sapiens.GRCh38.chr.dict",
+  "CNVSomaticPanelWorkflow.ref_fasta": "/home/florian2/Desktop/gatk-workflows/inputs/Homo_sapiens.GRCh38.chr.fa",
+  "CNVSomaticPanelWorkflow.ref_fasta_fai": "/home/florian2/Desktop/gatk-workflows/inputs/Homo_sapiens.GRCh38.chr.fa.fai",
   "CNVSomaticPanelWorkflow.intervals": "/home/florian2/Desktop/gatk-workflows/inputs/targets_C.preprocessed.interval_list",
   "CNVSomaticPanelWorkflow.blacklist_intervals": "/home/florian2/Desktop/gatk-workflows/inputs/CNV_and_centromere_blacklist.hg38liftover.list",
-  "CNVSomaticPanelWorkflow.PreprocessIntervals.bin_length":"0",
+  "CNVSomaticPanelWorkflow.PreprocessIntervals.bin_length":"120",
 
   "CNVSomaticPanelWorkflow.gatk_docker": "broadinstitute/gatk:4.6.1.0",
   
