@@ -1,0 +1,69 @@
+#!/bin/bash
+#SBATCH --job-name=[% PAIR %]_[% TYPE %]_GATK
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=10
+#SBATCH --time=1-06:00:00
+#SBATCH --mem-per-cpu=1000
+#SBATCH --partition=batch
+
+# Load modules
+module load releases/2023a
+module load GATK/4.5.0.0-GCCcore-12.3.0-Java-17
+
+# Set variables for paths to make it easier to update later
+REF_GENOME="Homo_sapiens.GRCh38.chr.fa"
+NORMAL_BAM="/home/poulainf/Filtred_BAMs/Local_markdup_[% CTR %]__ALN_sample_final.bam"
+TUMOR_BAM="/home/poulainf/Filtred_BAMs/Local_markdup_[% TEST %]__ALN_sample_final.bam"
+GERMLINE_RESOURCE="/home/poulainf/Selected_chr_0.01_gnomad.exomes.v4.1.vcf"
+PON="/home/poulainf/pon.vcf.gz"
+EXAC_COMMON="/workdir/poulainf/new_analyze/somatic-hg38_small_exac_common_3.hg38.vcf.gz"
+TARGET_BED="/home/poulainf/exome_extended_130.bed"
+WORKDIR="/workdir/poulainf/new_analyze"
+
+F1R2_TAR="$WORKDIR/[% PAIR %]_[% TYPE %]_GATK.f1r2.tar.gz"
+SOMATIC_VCF="$WORKDIR/[% PAIR %]_[% TYPE %]_GATK_somatic.vcf.gz"
+READ_ORIENTATION_MODEL="$WORKDIR/[% PAIR %]_[% TYPE %]_read-orientation-model.tar.gz"
+GETPILEUP_TABLE="$WORKDIR/[% PAIR %]_[% TYPE %]_getpileupsummaries.table"
+SEGMENTS_TABLE="$WORKDIR/[% PAIR %]_[% TYPE %]_segments.table"
+CONTAMINATION_TABLE="$WORKDIR/[% PAIR %]_[% TYPE %]_calculatecontamination.table"
+FILTERED_VCF="$WORKDIR/[% PAIR %]_[% TYPE %]_GATK_somatic_filtered.vcf.gz"
+
+# Step 1: Mutect2
+  gatk Mutect2 \
+    -R $REF_GENOME \
+    -I $NORMAL_BAM \
+    -I $TUMOR_BAM \
+    -L $TARGET_BED \
+    -normal [% CTR %]_ \
+    --germline-resource $GERMLINE_RESOURCE \
+    --panel-of-normals $PON \
+    --f1r2-tar-gz $F1R2_TAR \
+    -O $SOMATIC_VCF \
+    --native-pair-hmm-threads 10
+
+# Step 2: LearnReadOrientationModel
+gatk LearnReadOrientationModel \
+  -I $F1R2_TAR \
+  -O $READ_ORIENTATION_MODEL
+
+# Step 3: GetPileupSummaries (Tumor sample only)
+gatk GetPileupSummaries \
+  -I $TUMOR_BAM \
+  -V $EXAC_COMMON \
+  -L $TARGET_BED \
+  -O $GETPILEUP_TABLE
+
+# Step 4: CalculateContamination
+gatk CalculateContamination \
+  -I $GETPILEUP_TABLE \
+  -O $CONTAMINATION_TABLE \
+  --tumor-segmentation $SEGMENTS_TABLE
+
+# Step 5: FilterMutectCalls
+gatk FilterMutectCalls \
+  -R $REF_GENOME \
+  -V $SOMATIC_VCF \
+  --tumor-segmentation $SEGMENTS_TABLE \
+  --contamination-table $CONTAMINATION_TABLE \
+  --ob-priors $READ_ORIENTATION_MODEL \
+  -O $FILTERED_VCF
