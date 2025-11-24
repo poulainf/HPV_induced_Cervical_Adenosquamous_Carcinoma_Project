@@ -55,6 +55,22 @@ gatk GenomicsDBImport \
 
 The Pon were next used with mutect2 command Next paire of normal and cancer where analyzed by mutect2 gatk. For each sammple a job submission files where generated to run on HCPs on slurm environment.  
 
+
+```bash
+while read line;do
+
+	CTR="$( echo $line | cut -f1 )";
+	TEST="$( echo $line | cut -f2 )";
+	PAIR="$( echo $line | cut -f3 )";
+	TYPE="$( echo $TEST | perl -pe "s/\d\d//g" )"
+
+	tpage --define CTR=$CTR --define TEST=$TEST --define PAIR=$PAIR --define TYPE=$TYPE RUN_mtect2_CLUSTER_3.0.tt  > Mutect2_RUN_${PAIR}_${TYPE}_CLUSTER.sh ;
+done < Refs_samples2.txt
+
+
+```
+
+
 ## CNVs calling
 Copy variation has been achieved based on [GATK somatic copy number variation calling pipeline](https://gatk.broadinstitute.org/hc/en-us/articles/360035535892-Somatic-copy-number-variant-discovery-CNVs)
 
