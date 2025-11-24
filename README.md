@@ -64,11 +64,65 @@ while read line;do
 	PAIR="$( echo $line | cut -f3 )";
 	TYPE="$( echo $TEST | perl -pe "s/\d\d//g" )"
 
-	tpage --define CTR=$CTR --define TEST=$TEST --define PAIR=$PAIR --define TYPE=$TYPE RUN_mtect2_CLUSTER_3.0.tt  > Mutect2_RUN_${PAIR}_${TYPE}_CLUSTER.sh ;
+	tpage --define CTR=$CTR --define TEST=$TEST --define PAIR=$PAIR --define TYPE=$TYPE Run_mutect2_cluster.tt  > Mutect2_RUN_${PAIR}_${TYPE}_CLUSTER.sh ;
 done < Refs_samples2.txt
+
+```
+
+VCF files produced by mutect2 SNV and InDels calling has been next analyze to filtrate mutations, annotated, produce maf, correct HUGO genes symbole. 
+
+```bash
+```bash
+for i in ` ls Paire_*GATK_somatic_filtered.vcf ` ; do
+
+    Trie_vcf_by_gnomad4.pl Selected_chr_0.01_gnomad.exomes.v4.1.vcf $i 0.05 mutect2 no snps
+
+done
+
+for i in ` ls Filtred_0.05*.vcf | sed -e s/".vcf"// ` ; do
+
+	tpage --define CTR=$i ./annovar.tt > Annovar_RUN_${i}.sh;
+ 
+done
+
+chmod a+x *.sh
+
+find . -type f | grep "Annovar" | parallel --tmuxpane '{}'
+
+for i in ` ls Filtred_0.05_*_annotated.hg38_multianno.txt |sed -e s/'.txt'// `; do
+
+	MyID="$( echo $i | perl -pe 's/.+(Paire_.+)_annotated.+/$1/g' )";
+	echo $MyID ; annovar2maf.py -t ${MyID} ${i}.txt > ${i}.maf ;
+
+done
+
+for i in `ls *.maf ` ; do
+
+	./maftools.R $i ;
+
+done
+
+cat Annovar_corrected_Filtred_0.05_._GATK_somatic_filtered_annotated.hg38_multianno_maftools.maf | head -n1 > MUTECT2_MAF.txt  
+
+for i in `ls *.hg38_multianno_maftools.maf ` ; do
+
+        SAMPLE="$( echo $i | perl -pe 's/.+Paire\_(\d+)\_(\w+)\_GATK.+/$1$2/g' )";
+        NUM="$( echo $i | perl -pe 's/.+Paire\_(\d+)\_\w+\_GATK.+/$1/g' )";
+        echo $SAMPLE
+        echo $NUM
+        tail -n +2 $i  >> MUTECT2_MAF.txt
+
+done
+
 
 
 ```
+
+
+```
+
+
+
 
 
 ## CNVs calling
