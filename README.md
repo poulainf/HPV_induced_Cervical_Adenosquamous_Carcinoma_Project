@@ -71,7 +71,7 @@ done < Refs_samples2.txt
 
 VCF files produced by mutect2 SNV and InDels calling has been next analyze to filtrate mutations, annotated, produce maf, correct HUGO genes symbole. 
 
-```bash
+
 ```bash
 for i in ` ls Paire_*GATK_somatic_filtered.vcf ` ; do
 
@@ -118,11 +118,20 @@ done
 
 ```
 
+Raw vcf files has been combined to ensure fishing of paired mutations. 
 
+```bash
 
+echo -n > Raw_VCF.vcf
 
+for i in Paire_*_GATK_somatic_filtered.vcf; do
 
+    SAMPLE="$(echo $i | perl -pe 's/(Paire_\d+_\w+)_GATK.+/$1/g')"
+    grep -v "^#" "$i" | awk -v sample="$SAMPLE" '{ print sample "\t" $0 }' >> Raw_VCF.vcf
 
+done
+
+```
 
 
 ## CNVs calling
