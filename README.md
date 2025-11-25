@@ -1,36 +1,54 @@
-# Whole-exome pipeline analysis / CNV, SNP, and InDel extraction / Double-capture data visualization / Figure generation
->The following pipeline complements the Materials and Methods section of the "..." research study.
->These scripts were designed to detect integrated HPV genome sequences from FFPE-fixed adenosquamous carcinoma samples.
-   -Double-capture data visualization
->In addition, the cancer genome was explored through whole-exome sequencing (WES) to extract SNPs, InDels, and CNVs as part of the following analyses:
-  -Whole-exome pipeline analysis
-  -CNV, SNP, and InDel extraction
->In addition all scripts used for results vizualization are also reported
+# Whole-Exome and Double-Capture Analysis Pipeline  
+**CNV, SNP, and InDel extraction • HPV double-capture visualization • Figure generation**
 
+This repository contains the computational pipelines described in the *Materials and Methods* section of the study "**[...]**".  
+All scripts were designed to detect **integrated HPV genomic sequences** from FFPE-fixed adenosquamous carcinoma samples and to characterize the **somatic landscape** using whole-exome sequencing.
 
-## Double-capture pipeline data visualization
-Fastq from HPV genome double capture hase been treated by [ViroCapt](https://github.com/maximewack/viroCapt). Briefly ViroCapt consist 
-## Whole-exome pipeline analysis
-Raw FASTQ files were successively processed through deduplication using **Clumpify**, followed by **adapter trimming** and **quality filtering** with **BBDuk**. Read quality was then assessed using **FastQC**.
+## Overview
+- **HPV double-capture data visualization**
+- **Whole-exome sequencing (WES) analysis pipeline**
+- **SNP, InDel, and CNV extraction**
+- **Figure generation scripts**
 
-Filtered reads were mapped to the **hg38 reference genome** using **BWA-MEM**. **Duplicate reads** were marked with **Samtools**, and **base quality score recalibration** was performed using **GATK BQSR**. **Mapping depth** was assessed using **Mosdepth**.
+All visualization and post-processing scripts used to generate figures for the manuscript are included.
 
-All steps were performed by running `Fastq_Alignement.sh` script on the raw FASTQ directory.
+---
+
+## 📊 Double-Capture Pipeline (HPV)
+
+FASTQ files from HPV genome double-capture sequencing were processed using  
+**[ViroCapt](https://github.com/maximewack/viroCapt)**.  
+ViroCapt performs quality control, filtering, host-sequence removal, and viral-sequence enrichment to enable the detection of integrated HPV fragments.
+
+---
+
+## 🧬 Whole-Exome Sequencing Pipeline
+
+Raw FASTQ files undergo the following steps:
+
+1. **Deduplication** — *Clumpify*  
+2. **Adapter trimming & quality filtering** — *BBDuk*  
+3. **Quality control** — *FastQC*  
+4. **Alignment to hg38** — *BWA-MEM*  
+5. **Duplicate marking** — *Samtools*  
+6. **Base Quality Score Recalibration (BQSR)** — *GATK*  
+7. **Depth assessment** — *Mosdepth*
+
+All steps are executed through:
 
 ```bash
 ./Fastq_Alignement.sh
-```
 
-## 🧬 SNP and INDEL Calling
+🧬 SNP and InDel Calling (Mutect2)
 
-SNP and INDEL calling was performed using the **Mutect2** pipeline from **GATK**.
-A **Panel of Normals (PoN)** was created using **control FASTQ sequences**.
+Somatic SNP and InDel calling was performed using GATK Mutect2.
+A Panel of Normals (PoN) was first built from control BAM samples.
 
+PoN construction
 ```bash
-
 WORKSPACE="pon_db2"
 
-# Step 1: Generate Reformat_PON_*.sh scripts from control BAM files
+# Step 1: Generate per-sample PON scripts
 for bam in Local_markdup_*CTR*_ALN_sample_final.bam; do
     sample=$(basename "$bam" .bam)
     echo "Processing $sample"
@@ -39,209 +57,102 @@ done
 
 chmod a+x *.sh
 
-# Step 2: Run the generated scripts in parallel (limit to 4 concurrent jobs)
+# Step 2: Run scripts in parallel
 ls Reformat_PON_*.sh | xargs -n 1 -P 4 bash
 
-# Step 3: Create a list of VCF files
+# Step 3: Create VCF list
 vcf_list=$(ls Local_markdup_*CTR*__ALN_GATK.vcf.gz | sed 's/^/-V /' | tr '\n' ' ')
 
-# Step 4: Run GenomicsDBImport with the list of VCFs
+# Step 4: Import into GenomicsDB
 gatk GenomicsDBImport \
     -R "$REFERENCE" \
     --genomicsdb-workspace-path "$WORKSPACE" \
     $vcf_list
-
 ```
+Mutect2 paired tumor/normal calling
 
-The Pon were next used with mutect2 command Next paire of normal and cancer where analyzed by mutect2 gatk. For each sammple a job submission files where generated to run on HCPs on slurm environment.  
-
-
+Job scripts were generated automatically for HPC SLURM submission:
 ```bash
-while read line;do
+while read line; do
+    CTR="$(echo $line | cut -f1)"
+    TEST="$(echo $line | cut -f2)"
+    PAIR="$(echo $line | cut -f3)"
+    TYPE="$(echo $TEST | perl -pe "s/\d\d//g")"
 
-	CTR="$( echo $line | cut -f1 )";
-	TEST="$( echo $line | cut -f2 )";
-	PAIR="$( echo $line | cut -f3 )";
-	TYPE="$( echo $TEST | perl -pe "s/\d\d//g" )"
-
-	tpage --define CTR=$CTR --define TEST=$TEST --define PAIR=$PAIR --define TYPE=$TYPE Run_mutect2_cluster.tt  > Mutect2_RUN_${PAIR}_${TYPE}_CLUSTER.sh ;
+    tpage --define CTR=$CTR --define TEST=$TEST --define PAIR=$PAIR --define TYPE=$TYPE \
+        Run_mutect2_cluster.tt > Mutect2_RUN_${PAIR}_${TYPE}_CLUSTER.sh ;
 done < Refs_samples2.txt
-
 ```
-
-VCF files produced by mutect2 SNV and InDels calling has been next analyze to filtrate mutations, annotated, produce maf, correct HUGO genes symbole. 
-
-
+Variant filtering, annotation and MAF generation
 ```bash
-for i in ` ls Paire_*GATK_somatic_filtered.vcf ` ; do
-
+for i in `ls Paire_*GATK_somatic_filtered.vcf`; do
     Trie_vcf_by_gnomad4.pl Selected_chr_0.01_gnomad.exomes.v4.1.vcf $i 0.05 mutect2 no snps
-
 done
 
-for i in ` ls Filtred_0.05*.vcf | sed -e s/".vcf"// ` ; do
-
-	tpage --define CTR=$i ./annovar.tt > Annovar_RUN_${i}.sh;
- 
+for i in `ls Filtred_0.05*.vcf | sed -e s/".vcf"//`; do
+    tpage --define CTR=$i ./annovar.tt > Annovar_RUN_${i}.sh
 done
 
 chmod a+x *.sh
-
 find . -type f | grep "Annovar" | parallel --tmuxpane '{}'
-
-for i in ` ls Filtred_0.05_*_annotated.hg38_multianno.txt |sed -e s/'.txt'// `; do
-
-	MyID="$( echo $i | perl -pe 's/.+(Paire_.+)_annotated.+/$1/g' )";
-	echo $MyID ; annovar2maf.py -t ${MyID} ${i}.txt > ${i}.maf ;
-
-done
-
-for i in `ls *.maf ` ; do
-
-	./maftools.R $i ;
-
-done
-
-cat Annovar_corrected_Filtred_0.05_._GATK_somatic_filtered_annotated.hg38_multianno_maftools.maf | head -n1 > MUTECT2_MAF.txt  
-
-for i in `ls *.hg38_multianno_maftools.maf ` ; do
-
-        SAMPLE="$( echo $i | perl -pe 's/.+Paire\_(\d+)\_(\w+)\_GATK.+/$1$2/g' )";
-        NUM="$( echo $i | perl -pe 's/.+Paire\_(\d+)\_\w+\_GATK.+/$1/g' )";
-        echo $SAMPLE
-        echo $NUM
-        tail -n +2 $i  >> MUTECT2_MAF.txt
-
-done
-
-
-
 ```
-
-Raw vcf files has been combined to ensure fishing of paired mutations. 
-
+Convert annotated variants to MAF:
 ```bash
-
-echo -n > Raw_VCF.vcf
-
-for i in Paire_*_GATK_somatic_filtered.vcf; do
-
-    SAMPLE="$(echo $i | perl -pe 's/(Paire_\d+_\w+)_GATK.+/$1/g')"
-    grep -v "^#" "$i" | awk -v sample="$SAMPLE" '{ print sample "\t" $0 }' >> Raw_VCF.vcf
-
+for i in `ls Filtred_0.05_*_annotated.hg38_multianno.txt | sed -e s/'.txt'//`; do
+    MyID="$(echo $i | perl -pe 's/.+(Paire_.+)_annotated.+/$1/g')"
+    annovar2maf.py -t ${MyID} ${i}.txt > ${i}.maf
 done
 
+for i in `ls *.maf`; do
+    ./maftools.R $i
+done
 ```
-
-
+Build a combined MAF file:
 ```bash
+cat Annovar_corrected_Filtred_0.05_._GATK_somatic_filtered_annotated.hg38_multianno_maftools.maf | \
+    head -n1 > MUTECT2_MAF.txt  
 
-wget "https://kircherlab.bihealth.org/download/CADD/v1.7/GRCh38/whole_genome_SNVs.tsv.gz"
-
-tail -n+2 gnomad.genomes.r4.0.indel.tsv >> whole_genome_SNVs.tsv
-
-Annotate_MAF_CACC.pl Indels_vaf0.8.maf gnomad.genomes.r4.0.indel.tsv INDELs
-
-
-
-
-FILE="whole_genome_SNVs.tsv"
-
-# Nombre de splits
-PARTS=35
-
-# Nom du dossier temporaire
-mkdir -p splits
-
-# Extraire l'en-tête
-head -n 1 "$FILE" > header.txt
-
-# Compter le nombre de lignes (sans l �en-tête)
-TOTAL=$(($(wc -l < "$FILE") - 1))
-PER_FILE=$(( (TOTAL + PARTS - 1) / PARTS ))
-
-# Split (en omettant la première ligne)
-tail -n +2 "$FILE" | split -l "$PER_FILE" - splits/split_
-
-# Ajouter l �en-tête Ã� chaque fichier
-for f in splits/split_*; do
-    cat header.txt "$f" > "$f.tsv"
-    rm "$f"
+for i in `ls *.hg38_multianno_maftools.maf`; do
+    SAMPLE="$(echo $i | perl -pe 's/.+Paire\_(\d+)\_(\w+)\_GATK.+/$1$2/g')"
+    tail -n +2 $i >> MUTECT2_MAF.txt
 done
-
-
-INFILE="Mutect2_VCF0.8.maf"
-SCRIPT="./Annotate_MAF_CACC.pl"
-mkdir -p bash_jobs
-
-i=0
-for f in splits/*.tsv; do
-    script_name="bash_jobs/run_$i.sh"
-    echo "# > "$script_name"
-    echo "$SCRIPT \"$INFILE\" \"$f\" \"_$i\"" >> "$script_name"
-    chmod +x "$script_name"
-    ((i++))
-done
-
-INFILE="Mutect2_VCF0.8.maf"
-SCRIPT="./Annotate_MAF_CACC.pl"
-mkdir -p bash_jobs
-
-i=0
-for f in splits/*.tsv; do
-    script_name="bash_jobs/run_$i.sh"
---
-rm tmp_fastqc_data.txt
-
-# Calcul de la moyenne
-if [ $sample_count -gt 0 ]; then
-    avg_reads=$((total_reads / sample_count))
-    echo "������� Moyenne de reads par échantillon : $avg_reads"
-else
-    echo "Aucun fichier FastQC trouvé."
-fi
-
-
-wget "https://kircherlab.bihealth.org/download/CADD/v1.7/GRCh38/gnomad.genomes.r4.0.indel.tsv.gz"
-./Annotate_MAF_CACC.pl Mutect2_VCF0.8.maf gnomad.genomes.r4.0.indel.tsv INDELs
-
-
-
-head -n1 Mutect2_VCF0.8.maf_cadd_ANNOTED_22.txt > Mutect2_VCF0.8.maf_cadd_FULL.txt
-grep -vh "GenoCanyon_score" Mutect2_VCF0.8.maf_cadd_ANNOTED_*.txt >> Mutect2_VCF0.8.maf_cadd_FULL.txt
-grep -v "GenoCanyon_score" Indels_vaf0.8.maf_cadd_ANNOTEDINDELs.txt >> Mutect2_VCF0.8.maf_cadd_FULL.txt
-
-
 ```
-
-
-## CNVs calling
-Copy variation has been achieved based on [GATK somatic copy number variation calling pipeline](https://gatk.broadinstitute.org/hc/en-us/articles/360035535892-Somatic-copy-number-variant-discovery-CNVs)
-
-A Panel of normal as been first built by the use of noraml tissue BAM read files by following script commande: 
+🧬 CADD Annotation (SNVs & Indels)
 ```bash
-
-java -jar cromwell-47.jar run ./gatk4-somatic-cnvs/cnv_somatic_panel_workflow.wdl --inputs ./gatk4-somatic-cnvs/cnv_somatic_panel_workflow.b37.inputs.json
-
-
-while read line;do\
-\
-	CTR="$( echo $line | cut -f1 )";\
-	TEST="$( echo $line | cut -f2 )";\
-	PAIR="$( echo $line | cut -f3 )";\
-	TYPE="$( echo $TEST | perl -pe "s/\d\d//g" )"\
-	echo $TYPE\
-	tpage --define CTR=$CTR --define TEST=$TEST cnv_somatic_pair_workflow.inputs.tt > RUN_${PAIR}_${TYPE}_cnv_somatic_pair_workflow.b37.inputs;\
-\
-done < ./Refs_samples2.txt
-
-
-for i in ` ls ./gatk4-somatic-cnvs/RUN_Paire*.inputs ` ; do  java -jar cromwell-47.jar run ./gatk4-somatic-cnvs/cnv_somatic_pair_workflow.wdl --inputs $i ; done
 ```
+🧬 CNV Calling (GATK CNV)
 
-The produced 
+CNV calling was performed using the
+GATK Somatic Copy Number Variant Discovery Pipeline.
 
+Build the Panel of Normals
+```bash
+java -jar cromwell-47.jar run \
+    ./gatk4-somatic-cnvs/cnv_somatic_panel_workflow.wdl \
+    --inputs ./gatk4-somatic-cnvs/cnv_somatic_panel_workflow.b37.inputs.json
+```
+Generate inputs for paired analyses
+```bash
+while read line; do
+    CTR="$(echo $line | cut -f1)"
+    TEST="$(echo $line | cut -f2)"
+    PAIR="$(echo $line | cut -f3)"
+    TYPE="$(echo $TEST | perl -pe "s/\d\d//g")"
 
+    tpage --define CTR=$CTR --define TEST=$TEST \
+        cnv_somatic_pair_workflow.inputs.tt > RUN_${PAIR}_${TYPE}_cnv_somatic_pair_workflow.b37.inputs
+done < Refs_samples2.txt
+```
+Run CNV workflow
+```bash
+for i in ./gatk4-somatic-cnvs/RUN_Paire*.inputs; do
+    java -jar cromwell-47.jar run \
+        ./gatk4-somatic-cnvs/cnv_somatic_pair_workflow.wdl \
+        --inputs $i
+done
+```
+CNV merging and annotation
+Merging of denoised CR and called CNV segments:
 ```bash
 while read line;do   
 
@@ -325,17 +236,12 @@ while read -r line; do
 done < ./Refs_samples2.txt
 
 ```
+📈 Figure Generation
 
-
-## Figure generation
-
-Based on 
-
-```R
-
+Figures were produced using the following R scripts:
+```
 Circo_plot.R
 Figures_papier_MAFs_18.R
 Analyze_CNV8.2.R
-
 ```
 
