@@ -41,7 +41,7 @@ All steps are executed through:
 ```
 ---
 
-##🧬 SNP and InDel Calling (Mutect2)
+## 🧬 SNP and InDel Calling (Mutect2)
 
 Somatic SNP and InDel calling was performed using GATK Mutect2.
 A Panel of Normals (PoN) was first built from control BAM samples.
@@ -198,7 +198,7 @@ grep -v "GenoCanyon_score" Indels_vaf0.8.maf_cadd_ANNOTEDINDELs.txt >> Mutect2_V
 ```
 ---
 
-##🧬 CNV Calling (GATK CNV)
+## 🧬 CNV Calling (GATK CNV)
 
 CNV calling was performed using the
 GATK Somatic Copy Number Variant Discovery Pipeline.
@@ -316,7 +316,7 @@ done < ./Refs_samples2.txt
 ```
 ---
 
-##📈 Figure Generation
+## 📈 Figure Generation
 
 Figures were produced using the following R scripts:
 ```
