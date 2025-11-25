@@ -38,8 +38,10 @@ All steps are executed through:
 
 ```bash
 ./Fastq_Alignement.sh
+```
+---
 
-🧬 SNP and InDel Calling (Mutect2)
+##🧬 SNP and InDel Calling (Mutect2)
 
 Somatic SNP and InDel calling was performed using GATK Mutect2.
 A Panel of Normals (PoN) was first built from control BAM samples.
@@ -119,8 +121,84 @@ done
 ```
 🧬 CADD Annotation (SNVs & Indels)
 ```bash
+awk -v OFS='\t' '{start=$2-120; end=$3+120; if(start<0) start=0; print $1, start, end}' ./Twist_Comprehensive_Exome_Covered_Targets_hg38.bed > exome_extended_120.bed
+
+
+wget "https://kircherlab.bihealth.org/download/CADD/v1.7/GRCh38/whole_genome_SNVs.tsv.gz"
+
+tail -n+2 gnomad.genomes.r4.0.indel.tsv >> whole_genome_SNVs.tsv
+
+Annotate_MAF_CACC.pl Indels_vaf0.8.maf gnomad.genomes.r4.0.indel.tsv INDELs
+
+FILE="whole_genome_SNVs.tsv"
+
+# Nombre de splits
+PARTS=35
+
+# Nom du dossier temporaire
+mkdir -p splits
+
+# Extraire l'en-tête
+head -n 1 "$FILE" > header.txt
+
+# Compter le nombre de lignes (sans l �en-tête)
+TOTAL=$(($(wc -l < "$FILE") - 1))
+PER_FILE=$(( (TOTAL + PARTS - 1) / PARTS ))
+
+# Split (en omettant la première ligne)
+tail -n +2 "$FILE" | split -l "$PER_FILE" - splits/split_
+
+# Ajouter l �en-tête Ã� chaque fichier
+for f in splits/split_*; do
+    cat header.txt "$f" > "$f.tsv"
+    rm "$f"
+done
+
+
+INFILE="Mutect2_VCF0.8.maf"
+SCRIPT="./Annotate_MAF_CACC.pl"
+mkdir -p bash_jobs
+
+i=0
+for f in splits/*.tsv; do
+    script_name="bash_jobs/run_$i.sh"
+    echo "# > "$script_name"
+    echo "$SCRIPT \"$INFILE\" \"$f\" \"_$i\"" >> "$script_name"
+    chmod +x "$script_name"
+    ((i++))
+done
+
+INFILE="Mutect2_VCF0.8.maf"
+SCRIPT="./Annotate_MAF_CACC.pl"
+mkdir -p bash_jobs
+
+i=0
+for f in splits/*.tsv; do
+    script_name="bash_jobs/run_$i.sh"
+--
+rm tmp_fastqc_data.txt
+
+# Calcul de la moyenne
+if [ $sample_count -gt 0 ]; then
+    avg_reads=$((total_reads / sample_count))
+    echo "������� Moyenne de reads par échantillon : $avg_reads"
+else
+    echo "Aucun fichier FastQC trouvé."
+fi
+
+
+wget "https://kircherlab.bihealth.org/download/CADD/v1.7/GRCh38/gnomad.genomes.r4.0.indel.tsv.gz"
+./Annotate_MAF_CACC.pl Mutect2_VCF0.8.maf gnomad.genomes.r4.0.indel.tsv INDELs
+
+
+
+head -n1 Mutect2_VCF0.8.maf_cadd_ANNOTED_22.txt > Mutect2_VCF0.8.maf_cadd_FULL.txt
+grep -vh "GenoCanyon_score" Mutect2_VCF0.8.maf_cadd_ANNOTED_*.txt >> Mutect2_VCF0.8.maf_cadd_FULL.txt
+grep -v "GenoCanyon_score" Indels_vaf0.8.maf_cadd_ANNOTEDINDELs.txt >> Mutect2_VCF0.8.maf_cadd_FULL.txt
 ```
-🧬 CNV Calling (GATK CNV)
+---
+
+##🧬 CNV Calling (GATK CNV)
 
 CNV calling was performed using the
 GATK Somatic Copy Number Variant Discovery Pipeline.
@@ -236,7 +314,9 @@ while read -r line; do
 done < ./Refs_samples2.txt
 
 ```
-📈 Figure Generation
+---
+
+##📈 Figure Generation
 
 Figures were produced using the following R scripts:
 ```
