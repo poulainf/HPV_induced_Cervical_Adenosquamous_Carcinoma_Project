@@ -92,6 +92,7 @@ find . -type f | grep "Mutect2_RUN_" | parallel --tmuxpane '{}'
 ### Variant filtering, mutation annotation and MAF generation.
 Variant were filtered by selection of "PASS", "clustered_events", "haplotype" mutect2 filter mutations, alternative allele depth >30 reads in the tumor and >20 reads in the matched normal tissue, variant allele frequency in tumor (VAF_T) >0.08, variant allele frequency in normal(VAF_T) <0.04, alternative allele read depth in tumor variant (AD_T_ALT) >3 in the tumor, and tumor log odds (TLOD) >10. Potential germline variants were excluded by filtering out mutations with a population allele frequency >0.01 in the gnomAD database (version 4). Resulting VCF files were annotated using the ANNOVAR package with refGene and avsnp150 references. Non-exonic mutations were defined as variants located within 120 bp upstream or downstream of exon boundaries. Mutations were considered shared between ADC and SCC from the same patient if they matched in chromosome, position, mutation type, reference allele, and alternate allele. In order to maximize the detection of shared mutations, an additional rescue step was applied to retain unfiltered mutations that were also found in filtered mutations from the same patient sample.  Intra-pair comparisons were performed between ADC and SCC components from the same mixed tumor, while inter-pair comparisons were conducted to estimate the maximal cross-pair identity value, which served as a random threshold. Potential deleterious variant has been subselected from filtered mutations with a Combined Annotation Dependent Depletion (CCAD V1.6) phred score >20.  
 
+#### Mutect2 filter and gnomad selection 
 ```bash
 for i in `ls Paire_*GATK_somatic_filtered.vcf`; do
     Trie_vcf_by_gnomad4.pl Selected_chr_0.01_gnomad.exomes.v4.1.vcf $i 0.05 mutect2 no snps
@@ -104,7 +105,7 @@ done
 chmod a+x *.sh
 find . -type f | grep "Annovar" | parallel --tmuxpane '{}'
 ```
-Convert annotated variants to MAF:
+#### Convert annotated variants to MAF:
 ```bash
 for i in `ls Filtred_0.05_*_annotated.hg38_multianno.txt | sed -e s/'.txt'//`; do
     MyID="$(echo $i | perl -pe 's/.+(Paire_.+)_annotated.+/$1/g')"
@@ -115,7 +116,7 @@ for i in `ls *.maf`; do
     ./maftools.R $i
 done
 ```
-Build a combined MAF file:
+#### Build a combined MAF file:
 ```bash
 cat Annovar_corrected_Filtred_0.05_._GATK_somatic_filtered_annotated.hg38_multianno_maftools.maf | \
     head -n1 > MUTECT2_MAF.txt  
@@ -125,10 +126,11 @@ for i in `ls *.hg38_multianno_maftools.maf`; do
     tail -n +2 $i >> MUTECT2_MAF.txt
 done
 ```
-🧬 CADD Annotation (SNVs & Indels)
+#### Mutation sub selection and CADD Annotation (SNVs & Indels)
 ```bash
 awk -v OFS='\t' '{start=$2-120; end=$3+120; if(start<0) start=0; print $1, start, end}' ./Twist_Comprehensive_Exome_Covered_Targets_hg38.bed > exome_extended_120.bed
 
+SNPs_INDELs_mutation_subselection.R
 
 Annotate_mutations_CADD.sh
 ```
