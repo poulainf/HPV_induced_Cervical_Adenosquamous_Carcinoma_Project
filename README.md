@@ -43,10 +43,11 @@ All steps are executed through:
 
 ## 🧬 SNP and InDel Calling (Mutect2)
 
+# PoN construction
+
 Somatic SNP and InDel calling was performed using GATK Mutect2.
 A Panel of Normals (PoN) was first built from control BAM samples.
 
-PoN construction
 ```bash
 WORKSPACE="pon_db2"
 
