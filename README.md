@@ -73,7 +73,9 @@ gatk GenomicsDBImport \
 ```
 Mutect2 paired tumor/normal calling
 
-Job scripts were generated automatically for HPC SLURM submission:
+Job scripts were automatically generated for parallel submission.
+Following GATK Best Practices, somatic variants were called using Mutect2 for each tumor sample by comparison to its matched normal, with Panel of Normals (PoN) correction applied. The resulting raw VCFs were then analyzed sequentially using LearnReadOrientationModel, GetPileupSummaries, CalculateContamination, and finally FilterMutectCalls.
+
 ```bash
 while read line; do
     CTR="$(echo $line | cut -f1)"
@@ -84,8 +86,13 @@ while read line; do
     tpage --define CTR=$CTR --define TEST=$TEST --define PAIR=$PAIR --define TYPE=$TYPE \
         Run_mutect2_cluster.tt > Mutect2_RUN_${PAIR}_${TYPE}_CLUSTER.sh ;
 done < Refs_samples2.txt
+
+find . -type f | grep "Mutect2_RUN_" | parallel --tmuxpane '{}'
+
 ```
-Variant filtering, annotation and MAF generation
+Variant filtering, annotation and MAF generation.
+Variant 
+
 ```bash
 for i in `ls Paire_*GATK_somatic_filtered.vcf`; do
     Trie_vcf_by_gnomad4.pl Selected_chr_0.01_gnomad.exomes.v4.1.vcf $i 0.05 mutect2 no snps
