@@ -44,7 +44,6 @@ All steps are executed through:
 ## 🧬 SNP and InDel Calling (Mutect2)
 
 ### PoN construction
-
 Somatic SNP and InDel calling was performed using GATK Mutect2.
 A Panel of Normals (PoN) was first built from control BAM samples.
 
@@ -72,8 +71,8 @@ gatk GenomicsDBImport \
     --genomicsdb-workspace-path "$WORKSPACE" \
     $vcf_list
 ```
-Mutect2 paired tumor/normal calling
 
+### Mutect2 paired tumor/normal calling
 Job scripts were automatically generated for parallel submission.
 Following GATK Best Practices, somatic variants were called using Mutect2 for each tumor sample by comparison to its matched normal, with Panel of Normals (PoN) correction applied. The resulting raw VCFs were then analyzed sequentially using LearnReadOrientationModel, GetPileupSummaries, CalculateContamination, and finally FilterMutectCalls.
 
@@ -89,10 +88,9 @@ while read line; do
 done < Refs_samples2.txt
 
 find . -type f | grep "Mutect2_RUN_" | parallel --tmuxpane '{}'
-
 ```
-Variant filtering, annotation and MAF generation.
-Variant 
+### Variant filtering, mutation annotation and MAF generation.
+Variant were filtered by selection of "PASS", "clustered_events", "haplotype" mutect2 filter mutations, alternative allele depth >30 reads in the tumor and >20 reads in the matched normal tissue, variant allele frequency in tumor (VAF_T) >0.08, variant allele frequency in normal(VAF_T) <0.04, alternative allele read depth in tumor variant (AD_T_ALT) >3 in the tumor, and tumor log odds (TLOD) >10. Potential germline variants were excluded by filtering out mutations with a population allele frequency >0.01 in the gnomAD database (version 4). Resulting VCF files were annotated using the ANNOVAR package with refGene and avsnp150 references. Non-exonic mutations were defined as variants located within 120 bp upstream or downstream of exon boundaries. Mutations were considered shared between ADC and SCC from the same patient if they matched in chromosome, position, mutation type, reference allele, and alternate allele. In order to maximize the detection of shared mutations, an additional rescue step was applied to retain unfiltered mutations that were also found in filtered mutations from the same patient sample.  Intra-pair comparisons were performed between ADC and SCC components from the same mixed tumor, while inter-pair comparisons were conducted to estimate the maximal cross-pair identity value, which served as a random threshold. Potential deleterious variant has been subselected from filtered mutations with a Combined Annotation Dependent Depletion (CCAD V1.6) phred score >20.  
 
 ```bash
 for i in `ls Paire_*GATK_somatic_filtered.vcf`; do
