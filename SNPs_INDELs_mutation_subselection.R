@@ -15,10 +15,6 @@
 
 rm(list = ls())  # Clear R environment
 
-# Set working directory
-setwd("/media/florian/T7Shield/Projet_Liege/")
-# setwd("~/Projet_Liege/")  # Alternate for local use
-
 #---------------------------#
 # Load Required Libraries
 #---------------------------#
@@ -33,14 +29,14 @@ library(tidyr)        # Data cleaning, handling missing values
 # Load and Preprocess Raw Mutect2 VCF Data
 #---------------------------#
 
-raw_vcf <- fread("/media/florian2/T7/To_send/VCF_Muect2/Raw_VCF.vcf", sep = "\t", header = FALSE, nThread = 4)
+raw_vcf <- fread("Raw_VCF.vcf", sep = "\t", header = FALSE, nThread = 4)
 raw_vcf$Paire <- as.numeric(gsub("Paire_(\\d+)_.*", "\\1", raw_vcf$V1))
 
 #---------------------------#
 # Load MAF and Clean Sample Names
 #---------------------------#
 
-maf <- read.delim("/media/florian2/T7/To_send/VCF_Muect2/test_SNPs_MAF.txt", header = TRUE, sep = "\t")
+maf <- read.delim("MUTECT2_MAF.txt", header = TRUE, sep = "\t")
 
 maf$Tumor_Sample_Barcode <- gsub("CIN3|SCC2|SCC3", "SCC", maf$Tumor_Sample_Barcode)
 maf$Tumor_Sample_Barcode <- gsub("ADC2", "ADC", maf$Tumor_Sample_Barcode)
