@@ -90,15 +90,15 @@ done < Refs_samples2.txt
 find . -type f | grep "Mutect2_RUN_" | parallel --tmuxpane '{}'
 ```
 ### Variant filtering, mutation annotation and MAF generation.
-Variant were filtered by selection of "PASS", "clustered_events", "haplotype" mutect2 filter mutations, alternative allele depth >30 reads in the tumor and >20 reads in the matched normal tissue, variant allele frequency in tumor (VAF_T) >0.08, variant allele frequency in normal(VAF_T) <0.04, alternative allele read depth in tumor variant (AD_T_ALT) >3 in the tumor, and tumor log odds (TLOD) >10. Potential germline variants were excluded by filtering out mutations with a population allele frequency >0.01 in the gnomAD database (version 4). Resulting VCF files were annotated using the ANNOVAR package with refGene and avsnp150 references. Non-exonic mutations were defined as variants located within 120 bp upstream or downstream of exon boundaries. Mutations were considered shared between ADC and SCC from the same patient if they matched in chromosome, position, mutation type, reference allele, and alternate allele. In order to maximize the detection of shared mutations, an additional rescue step was applied to retain unfiltered mutations that were also found in filtered mutations from the same patient sample.  Intra-pair comparisons were performed between ADC and SCC components from the same mixed tumor, while inter-pair comparisons were conducted to estimate the maximal cross-pair identity value, which served as a random threshold. Potential deleterious variant has been subselected from filtered mutations with a Combined Annotation Dependent Depletion (CCAD V1.6) phred score >20.  
+Variants were filtered by selecting those with Mutect2 filters 'PASS', 'clustered_events', or 'haplotype', tumor alternative allele depth >30, matched normal depth >20, VAF_T >0.08, VAF_N <0.04, AD_T_ALT >3, and TLOD >10. Germline variants were excluded using a gnomAD (v4) allele frequency threshold of <0.01. Filtered VCFs were annotated with ANNOVAR using refGene and avsnp150. Non-exonic mutations were defined as those within ±120 bp of exon boundaries. Mutations were considered shared between ADC and SCC from the same patient when matching in chromosomal position, mutation type, and alleles. To enhance detection of shared events, a rescue step retained unfiltered mutations if also present in filtered calls from the paired sample. Intra-pair comparisons (ADC vs. SCC) were performed within tumors; inter-pair comparisons estimated a cross-pair identity threshold. Putative deleterious variants were extracted based on CADD v1.6 Phred scores >20. 
 
 #### Mutect2 filter and gnomad selection 
 ```bash
 for i in `ls Paire_*GATK_somatic_filtered.vcf`; do
-    Trie_vcf_by_gnomad4.pl Selected_chr_0.01_gnomad.exomes.v4.1.vcf $i 0.05 mutect2 no snps
+    Trie_vcf_by_gnomad4.pl Selected_chr_0.01_gnomad.exomes.v4.1.vcf $i 0.08 mutect2 no snps
 done
 
-for i in `ls Filtred_0.05*.vcf | sed -e s/".vcf"//`; do
+for i in `ls Filtred_0.08*.vcf | sed -e s/".vcf"//`; do
     tpage --define CTR=$i ./annovar.tt > Annovar_RUN_${i}.sh
 done
 
@@ -107,7 +107,7 @@ find . -type f | grep "Annovar" | parallel --tmuxpane '{}'
 ```
 #### Convert annotated variants to MAF:
 ```bash
-for i in `ls Filtred_0.05_*_annotated.hg38_multianno.txt | sed -e s/'.txt'//`; do
+for i in `ls Filtred_0.08_*_annotated.hg38_multianno.txt | sed -e s/'.txt'//`; do
     MyID="$(echo $i | perl -pe 's/.+(Paire_.+)_annotated.+/$1/g')"
     annovar2maf.py -t ${MyID} ${i}.txt > ${i}.maf
 done
@@ -118,7 +118,7 @@ done
 ```
 #### Build a combined MAF file:
 ```bash
-cat Annovar_corrected_Filtred_0.05_._GATK_somatic_filtered_annotated.hg38_multianno_maftools.maf | \
+cat Annovar_corrected_Filtred_0.08_._GATK_somatic_filtered_annotated.hg38_multianno_maftools.maf | \
     head -n1 > MUTECT2_MAF.txt  
 
 for i in `ls *.hg38_multianno_maftools.maf`; do
