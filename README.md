@@ -137,9 +137,7 @@ Annotate_mutations_CADD.sh
 ---
 
 ## 🧬 CNV Calling (GATK CNV)
-
-CNV calling was performed using the
-GATK Somatic Copy Number Variant Discovery Pipeline.
+Somatic copy number variants (CNVs) were called using the GATK Somatic CNV pipeline (version 4.6.1.0). A PoN generated from 126 matched normal tissue samples was used for copy number recalibration in each tumor-normal pair. CNVs were defined as regions with a log2 copy number ratio less than -0.3 (deletions) or greater than 0.3 (amplifications). Genic copy number alterations were extracted using FuncotateSegments (GATK). Focal CNV events (both deletions and amplifications) were selected if their size was less than one million base pairs. Comparison between ADC and SCC segments was based on matching start and stop gene loci. The proportion of shared segments was tested between ADC and SCC components from the same patient. Stringent criteria were applied to defined gene amplification with a log2 fold change <-1  and deletion with a fold change >0.6.   
 
 #### Build the Panel of Normals
 
