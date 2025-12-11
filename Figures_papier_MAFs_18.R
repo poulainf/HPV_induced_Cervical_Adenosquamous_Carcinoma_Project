@@ -1,232 +1,39 @@
 #!/usr/bin/Rscript
-rm(list = ls()) # clean up the environment
-setwd("/media/florian2/T7Shield1/Projet_Liege/")
-setwd("/media/florian/T7Shield/Projet_Liege/")
-#setwd("~/Projet_Liege/")
-# library(reshape)
-# library(ggpubr)
-library("ggplot2")
-library("reshape2")
-library("grid")
-library(ggplot2)
-library(randomcoloR)
-library(magrittr)
-library(ggpubr)
-# library(plotly)
-# library(ggrepel)
-# library(wesanderson)
-library(dplyr)
-library(RColorBrewer)
-library(Formula)
-library(lattice)
-# library(survival)
-library(Hmisc)
-library(ggsignif)
-require(dplyr)
-require(forcats)
-library(lsa)
-library(scales)
-library(gglogo)
+
 library(car)
+library(clusterProfiler)
+library(data.table)
+library(dplyr)
+library(Formula)
 library(ggplot2)
 library(ggpmisc)
-library(tidyr)
-library(stringr)
-library("patchwork")
+library(ggpubr)
+library(ggsignif)
 library(ggh4x)
-library(data.table)
-library(pheatmap)
-library(tidyr)
-library(patchwork)
-library(maftools)
+library(grid)
 library(gridExtra)
-library(clusterProfiler)
-library(org.Hs.eg.db)
-library(KEGGREST)
 library(HGNChelper)
+library(Hmisc)
+library(KEGGREST)
+library(lattice)
+library(lsa)
+library(maftools)
+library(magrittr)
+library(org.Hs.eg.db)
 library(patchwork)
+library(pheatmap)
+library(RColorBrewer)
+library(randomcoloR)
+library(reshape2)
+library(scales)
+library(stringr)
+library(tidyr)
+library(forcats)
 
-
-# 
-# 
-
-raw_files2 <- fread("/media/florian2/T7/To_send/VCF_Muect2/Raw_VCF.vcf", sep = "\t", header = FALSE, nThread = 4)
-raw_files2$Paire<-as.numeric(gsub("Paire_(\\d+)_.+","\\1",raw_files2$V1 ))
-
-##########################################  SNPs ######################################################
-Loas_files <- read.delim(file = "/media/florian2/T7/To_send/VCF_Muect2/test_SNPs_MAF.txt", header = TRUE, sep = "\t")
-Loas_files$Tumor_Sample_Barcode<-gsub("CIN3","SCC",Loas_files$Tumor_Sample_Barcode)
-Loas_files$Tumor_Sample_Barcode<-gsub("SCC2","SCC",Loas_files$Tumor_Sample_Barcode)
-Loas_files$Tumor_Sample_Barcode<-gsub("ADC2","ADC",Loas_files$Tumor_Sample_Barcode)
-Loas_files$Paire<-gsub("Paire_(\\d+)_.+_GATK_somatic_filtered","\\1",Loas_files$Tumor_Sample_Barcode)
-Loas_files$Cancer<-gsub("Paire_\\d+_(.+)_GATK_somatic_filtered","\\1",Loas_files$Tumor_Sample_Barcode)
-Loas_files$Tumor_Sample_Barcode<-gsub("_GATK_somatic_filtered","",Loas_files$Tumor_Sample_Barcode)
-Loas_files$Cancer[which(Loas_files$Cancer=="SCC3")]<-"SCC"
-Loas_files$Cancer[which(Loas_files$Cancer=="CIN3")]<-"SCC"
-Loas_files$Cancer[which(Loas_files$Cancer=="SCC2")]<-"SCC"
-Loas_files$Cancer[which(Loas_files$Cancer=="ADC2")]<-"ADC"
-
-
-
-Loas_files <- Loas_files[!(Loas_files$Paire %in% c(5, 7, 9,10)), ]
-datas_cliniques<-read.delim(file = "./Datas_cliniques.txt", header = T, sep = "\t")
-
-Loas_files_introns<-Loas_files[which(Loas_files$Variant_Classification==''|Loas_files$Variant_Classification=="Unknown"),]
-
-Exon_files<-read.delim(file = "Twist_Comprehensive_Exome_Covered_Targets_hg38.bed", header = F, sep = "\t")
-Exon_files$up<-Exon_files$V2-120
-Exon_files$down<-Exon_files$V2+120
-#Exon_files$chr<-paste0("chr",Exon_files$V1)
-Exon_files$chr<-Exon_files$V1
-
-# Convert to data.tables
-snps <- as.data.table(Loas_files_introns)
-exons <- as.data.table(Exon_files[,c(4,5,6)])
-
-# Convert to data.table
-setDT(snps)
-setDT(exons)
-
-# Rename exon columns for overlap matching
-setnames(exons, c("chr", "up", "down"), c("Chromosome", "start", "end"))
-# SNPs as point intervals
-snps[, start := Start_Position]
-snps[, end := Start_Position]
-# Set keys for fast overlap
-setkey(exons, Chromosome, start, end)
-setkey(snps, Chromosome, start, end)
-# Find overlaps (SNPs inside any exon)
-snps2 <- data.frame(foverlaps(snps, exons, nomatch = 0))
-snps2 <- snps2[, c(intersect(colnames(Loas_files), colnames(snps2)))]
-snps2$Variant_Classification<-"Non exonic"
-Loas_filesDD<-Loas_files[-which(Loas_files$Variant_Classification==''|Loas_files$Variant_Classification=="Unknown"),]
-Loas_files<-rbind(Loas_filesDD,snps2)
-##########################################  SNPs ######################################################
-
-
-Loas_files$Depht_tumor<-as.numeric(gsub("[^:]+:[^:]+:[^:]+:([^:,]+):.+","\\1",Loas_files$Otherinfo13))
-Loas_files$Depht_normal<-as.numeric(gsub("[^:]+:[^:]+:[^:]+:([^:,]+):.+","\\1",Loas_files$Otherinfo14))
-Loas_files$TLOD<-as.numeric(gsub(".+TLOD\\=(\\d*\\.*\\d*).*","\\1",Loas_files$Otherinfo11))
-Loas_files <- Loas_files[Loas_files$Otherinfo10 %in% c("PASS", "clustered_events", "haplotype"), ]
-Loas_files2<-Loas_files[-which(Loas_files$Depht_tumor<30),]
-Loas_files2<-Loas_files2[-which(Loas_files2$Depht_normal<20),]
-Loas_files3<-Loas_files2[-which(Loas_files2$TLOD<10),]
-Loas_files3$VAF_T<-as.numeric(gsub("[^\\:]+\\:[^\\:\\,]+[^\\:]*\\:([^\\:\\,]+).*\\:.+","\\1",Loas_files3$Otherinfo13))
-Loas_files3$VAF_N<-as.numeric(gsub("[^\\:]+\\:[^\\:\\,]+[^\\:]*\\:([^\\:\\,]+).*\\:.+","\\1",Loas_files3$Otherinfo14))
-Loas_files3<-Loas_files3[-which(Loas_files3$VAF_T<0.08),]
-Loas_files3 <- Loas_files3[which(Loas_files3$VAF_N < 0.04),]
-
-Loas_files3$AD_T_ALT <- as.numeric(gsub("^[^:]+:[^,]+,([^:]+):.*", "\\1", Loas_files3$Otherinfo13))
-Loas_files3 <- Loas_files3[which(Loas_files3$AD_T_ALT >= 4),]
-
-
-raw_files2$V1<-gsub("CIN3","SCC",raw_files2$V1)
-raw_files2$V1[raw_files2$V1=="Paire_2_ADC"]<-"Paire_18_ADC"
-raw_files2$V1<-gsub("CIN3","SCC",raw_files2$V1)
-raw_files2$V1<-gsub("SCC2","SCC",raw_files2$V1)
-raw_files2$V1<-gsub("ADC2","ADC",raw_files2$V1)
-raw_files2$Cancer<-gsub("Paire_\\d+_(.+)","\\1",raw_files2$V1 )
-raw_files2$combi <- paste(raw_files2$V1,raw_files2$V2, raw_files2$V3, raw_files2$V5, raw_files2$V6)
-Loas_files3$combi <- paste(paste(sep = "_","Paire",Loas_files3$Paire,Loas_files3$Cancer), Loas_files3$Chromosome, Loas_files3$Start_Position, Loas_files3$Reference_Allele, Loas_files3$Tumor_Seq_Allele2)
-Loas_files3$combi2 <- paste(paste(sep = "_","Paire",Loas_files3$Paire), Loas_files3$Chromosome, Loas_files3$Start_Position, Loas_files3$Reference_Allele, Loas_files3$Tumor_Seq_Allele2)
-
-
-Loas_files3 <- Loas_files3[(Loas_files3$Paire %in% c("11","12","13","14","16","15","18","1","3","4","6","8" )), ]
-
-Loas_files3_repeche <- data.frame()
-for (i in 1:length(unique(Loas_files3$Paire))){
-  my_sample1a<-Loas_files3[which(Loas_files3$Paire==unique(Loas_files3$Paire)[i]&Loas_files3$Cancer=="ADC"),]
-  my_sample2a<-Loas_files3[which(Loas_files3$Paire==unique(Loas_files3$Paire)[i]&Loas_files3$Cancer=="SCC"),]
-  
-  my_sample1a$research<-gsub("ADC","SCC",my_sample1a$combi)
-  my_sample2a$research<-gsub("SCC","ADC",my_sample2a$combi)
-  
-  my_repeche1<-my_sample1a[my_sample1a$research%in% raw_files2$combi,]
-  my_repeche2<-my_sample2a[my_sample2a$research%in% raw_files2$combi,]
-  
-  if (nrow(my_repeche1) > 0) {
-    match_idx1 <- match(my_repeche1$research, raw_files2$combi)
-    my_repeche1$Tumor_Sample_Barcode <- gsub("ADC", "SCC", my_repeche1$Tumor_Sample_Barcode)
-    my_repeche1$Cancer <- gsub("ADC", "SCC", my_repeche1$Cancer)
-    
-    my_repeche1$Otherinfo11 <- raw_files2[[9]][match_idx1]
-    my_repeche1$Otherinfo13 <- raw_files2[[11]][match_idx1]
-    my_repeche1$Otherinfo14 <- raw_files2[[12]][match_idx1]
-    my_repeche1$Paire <- raw_files2[[13]][match_idx1]
-    my_repeche1$Tumor_Sample_Barcode<- raw_files2[[1]][match_idx1]
-    my_repeche1$research <- NULL
-  }
-  
-  
-  if (nrow(my_repeche2) > 0) {
-    match_idx2 <- match(my_repeche2$research, raw_files2$combi)
-    
-    my_repeche2$Tumor_Sample_Barcode <- gsub("SCC", "ADC", my_repeche2$Tumor_Sample_Barcode)
-    my_repeche2$Cancer <- gsub("SCC", "ADC", my_repeche2$Cancer)
-    
-    my_repeche2$Otherinfo11 <- raw_files2[[9]][match_idx2]
-    my_repeche2$Otherinfo13 <- raw_files2[[11]][match_idx2]
-    my_repeche2$Otherinfo14 <- raw_files2[[12]][match_idx2]
-    my_repeche2$Paire <- raw_files2[[13]][match_idx2]
-    my_repeche2$Tumor_Sample_Barcode<- raw_files2[[1]][match_idx2]
-    
-    my_repeche2$research <- NULL
-  }
-  
-  Loas_files3_repeche <- rbind( Loas_files3_repeche,my_repeche1, my_repeche2)
-}
-
-Loas_files3_repeche<-unique(Loas_files3_repeche)
-Loas_files3_repeche$Fishing<-"Yes"
-Loas_files3$Fishing<-"No"
-
-Loas_files3<-rbind(Loas_files3,Loas_files3_repeche)
-Loas_files3<-unique(Loas_files3)
-
-
-Loas_files3$Depht_tumor<-as.numeric(gsub("[^:]+:[^:]+:[^:]+:([^:,]+):.+","\\1",Loas_files3$Otherinfo13))
-Loas_files3$Depht_normal<-as.numeric(gsub("[^:]+:[^:]+:[^:]+:([^:,]+):.+","\\1",Loas_files3$Otherinfo14))
-Loas_files3$TLOD<-as.numeric(gsub(".+TLOD\\=(\\d*\\.*\\d*).*","\\1",Loas_files3$Otherinfo11))
-Loas_files3$VAF_T<-as.numeric(gsub("[^\\:]+\\:[^\\:\\,]+[^\\:]*\\:([^\\:\\,]+).*\\:.+","\\1",Loas_files3$Otherinfo13))
-Loas_files3$VAF_N<-as.numeric(gsub("[^\\:]+\\:[^\\:\\,]+[^\\:]*\\:([^\\:\\,]+).*\\:.+","\\1",Loas_files3$Otherinfo14))
-Loas_files3$AD_T_ALT <- as.numeric(gsub("^[^:]+:[^,]+,([^:]+):.*", "\\1", Loas_files3$Otherinfo13))
-
-
-Loas_files3$combi3 <- paste(Loas_files3$Chromosome, Loas_files3$Start_Position)
-Loas_files3<-Loas_files3[!Loas_files3$Reference_Allele=="GCGGCCGCCGCCGCCGCCGCTGCGGGCGGCGCGCACCAGAACTCGGCCGTGGCGGCGGCGGCGGCGGCG",]
-datas_cliniques<-read.delim(file = "./Datas_cliniques.txt", header = T, sep = "\t")
-Loas_files3<-merge(x=datas_cliniques, y= Loas_files3, by = "Paire" )
-
-Loas_files3<-unique(Loas_files3)
-
-#
-
-Loas_files3 <- read.delim(file = "./Mutect2_VCF0.8.maf", header = TRUE, sep = "\t")
-Loas_files_CADD <- read.delim(file = "./Mutect2_VCF0.8.maf_cadd_FULL.txt", header = TRUE, sep = "\t")
-
-Loas_files_CADD$Paire<-gsub("Paire_(\\d+)_.+_GATK_somatic_filtered","\\1",Loas_files_CADD$Tumor_Sample_Barcode)
-
-Loas_files3$full_ID<-paste(sep = "_",Loas_files3$Start_Position,Loas_files3$Chromosome,Loas_files3$End_Position,
-                           Loas_files3$Reference_Allele,Loas_files3$Tumor_Seq_Allele2)
-
-Loas_files_CADD$full_ID<-paste(sep = "_",Loas_files_CADD$Start_Position,Loas_files_CADD$Chromosome,Loas_files_CADD$End_Position,
-                               Loas_files_CADD$Reference_Allele,Loas_files_CADD$Tumor_Seq_Allele2)
-
-Loas_files_CADD_simple<-Loas_files_CADD[,c(208,209)]
-
-Loas_files3_completed <- Loas_files3 %>%
-  left_join(Loas_files_CADD_simple, by = "full_ID") %>%
-  mutate(across(everything(), ~ ifelse(is.na(.), "-", .)))
-
-Loas_files3_completed<-unique(Loas_files3_completed)
-
-write.table(Loas_files3_completed,file = "Mutect2_VCF0.8.maf",quote = F,sep="\t",col.names = T,row.names = F)
-
-
+Loas_files3_completed<-read.delim(file = "./CADD_Annotated_Mutect2_VCF0.8.maf", header = TRUE, sep = "\t")
 
 Loas_files_INDELs_mutect2<-Loas_files3_completed[Loas_files3_completed$Variant_Type=="INS"|Loas_files3_completed$Variant_Type=="DEL",]
 Loas_files_SNPs<-Loas_files3_completed[Loas_files3_completed$Variant_Type=="SNP"|Loas_files3_completed$Variant_Type=="TNP"|Loas_files3_completed$Variant_Type=="DNP",]
-
 
 ####################
 ## Snps 
