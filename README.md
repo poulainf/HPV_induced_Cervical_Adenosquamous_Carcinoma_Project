@@ -141,7 +141,8 @@ Annotate_mutations_CADD.sh
 CNV calling was performed using the
 GATK Somatic Copy Number Variant Discovery Pipeline.
 
-Build the Panel of Normals
+#### Build the Panel of Normals
+
 ```bash
 java -jar cromwell-47.jar run \
     ./gatk4-somatic-cnvs/cnv_somatic_panel_workflow.wdl \
@@ -161,7 +162,9 @@ while read line; do
         cnv_somatic_pair_workflow.inputs.tt > RUN_${PAIR}_${TYPE}_cnv_somatic_pair_workflow.b37.inputs
 done < Refs_samples2.txt
 ```
-Run CNV workflow
+
+#### Run CNV workflow
+
 ```bash
 for i in ./gatk4-somatic-cnvs/RUN_Paire*.inputs; do
     java -jar cromwell-47.jar run \
@@ -170,7 +173,7 @@ for i in ./gatk4-somatic-cnvs/RUN_Paire*.inputs; do
 done
 ```
 #### CNV merging and annotation
-Merging of denoised CR and called CNV segments:
+Merging of denoised CR and called CNV segments.
 
 ```bash
 while read line;do   
