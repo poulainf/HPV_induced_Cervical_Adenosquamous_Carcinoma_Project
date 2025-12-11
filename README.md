@@ -147,7 +147,9 @@ java -jar cromwell-47.jar run \
     ./gatk4-somatic-cnvs/cnv_somatic_panel_workflow.wdl \
     --inputs ./gatk4-somatic-cnvs/cnv_somatic_panel_workflow.b37.inputs.json
 ```
-Generate inputs for paired analyses
+
+#### Generate inputs for paired analyses
+
 ```bash
 while read line; do
     CTR="$(echo $line | cut -f1)"
@@ -167,8 +169,9 @@ for i in ./gatk4-somatic-cnvs/RUN_Paire*.inputs; do
         --inputs $i
 done
 ```
-CNV merging and annotation
+#### CNV merging and annotation
 Merging of denoised CR and called CNV segments:
+
 ```bash
 while read line;do   
 
@@ -226,10 +229,6 @@ while read line;do
 	grep -v "@" Local_markdup_${TEST}__ALN_final.called.seg|grep -v "CONTIG" |  awk -F '\t' -v pair="$PAIR" -v type="$TYPE" '{print $0, "\t" type "\t" pair}'  >> Test_COMBINED.txt
         
 done < Refs_samples2.txt
-
-
-
-
 
 grep  "alt_allele" Local_markdup_33ADC__ALN_final.called.seg.funcotated.tsv | awk -F '\t', '{print $0, "\t","TYPE" ,"\t","PAIRE" }' > combined_files.txt
 rm combined_files.txt
