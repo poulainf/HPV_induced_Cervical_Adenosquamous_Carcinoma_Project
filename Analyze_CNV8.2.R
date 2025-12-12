@@ -25,6 +25,10 @@ library(stringr)
 library(survival)
 library(tidyr)
 library(wesanderson)
+library(patchwork)
+library(maftools)
+library(gridExtra)
+library(CINmetrics)
 
 
 Loas_files_POINT<-read.delim(file = "CNVs/Point_CR_COMBINED.txt")
