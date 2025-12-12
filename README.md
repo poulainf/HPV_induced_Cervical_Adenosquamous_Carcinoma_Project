@@ -1,7 +1,7 @@
 # Whole-Exome and Double-Capture Analysis Pipeline  
 **CNV, SNP, and InDel extraction • HPV double-capture visualization • Figure generation**
 
-This repository contains the computational pipelines described in the *Materials and Methods* section of the study "**Clonal origin and early lineagedivergence in cervical adenosquamous carcinoma**".  
+This repository contains the computational pipelines described in the *Materials and Methods* section of the study "**Clonal origin and early lineage divergence in cervical adenosquamous carcinoma**".  
 All scripts were designed to detect **integrated HPV genomic sequences** from FFPE-fixed adenosquamous carcinoma samples and to characterize the **somatic landscape** using whole-exome sequencing.
 
 ## Overview
