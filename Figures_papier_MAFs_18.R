@@ -80,11 +80,9 @@ summarize_SNPs2 <- Loas_files_SNPs %>%
   )
 
 summarize_SNPs<-rbind(summarize_SNPs1,summarize_SNPs2)
-
 summarize_SNPs$ordre<-1
 summarize_SNPs$ordre[summarize_SNPs$Cancer=="SCC"]<-2
 summarize_SNPs$ordre[summarize_SNPs$Cancer=="Commun"]<-3
-
 summarize_SNPs <- summarize_SNPs %>%
   arrange(New, ordre, Variant_Classification)
 summarize_SNPs$ordre<-NULL
@@ -114,17 +112,10 @@ write.table(x = Full_summarize_SNPs,file = "15Full_SNPs_summary.csv",quote = F,s
 ##########
 
 Loas_files_SNPs$MUT_TYPE<-paste0(Loas_files_SNPs$Reference_Allele,">",Loas_files_SNPs$Tumor_Seq_Allele2)
-
 Loas_files_SNPs$MUT_TYPE<-paste0(Loas_files_SNPs$Reference_Allele,">",Loas_files_SNPs$Tumor_Seq_Allele2)
-
 Loas_files_SNPs$MUT_TYPE[grepl("...>...",Loas_files_SNPs$MUT_TYPE)]
-
-
-
 Loas_files_SNPs$MUT_TYPE[grepl("^..>..$",Loas_files_SNPs$MUT_TYPE)]
 
-
-colnames(Loas_files_SNPs)
 summarize_SNPs_type <- Loas_files_SNPs %>%
   group_by(New, Chromosome, Start_Position, MUT_TYPE) %>%
   mutate(commun = n_distinct(Cancer)) %>%
@@ -147,15 +138,12 @@ summarize_SNPs_type <- Loas_files_SNPs %>%
     fill = list(Count = 0,Prop=0)
   )
 
-
-
 summarize_SNPs_type$ordre<-1
 summarize_SNPs_type$ordre[summarize_SNPs_type$Cancer=="SCC"]<-2
 summarize_SNPs_type$ordre[summarize_SNPs_type$Cancer=="Commun"]<-3
 
 summarize_SNPs_type <- summarize_SNPs_type %>%
   arrange(ordre, MUT_TYPE)
-
 
 # Plot
 x1<-ggplot(data = summarize_SNPs_type, aes(y = MUT_TYPE, x = Prop, fill = MUT_TYPE)) +
@@ -164,7 +152,7 @@ x1<-ggplot(data = summarize_SNPs_type, aes(y = MUT_TYPE, x = Prop, fill = MUT_TY
   labs(x = "Proportion", y = "Mutation Type") +
   geom_vline(xintercept = 0, size = 2) +
   scale_x_continuous(expand = c(0, 0)) + 
-  theme_classic() +   # ✅ garde les axes et ticks visibles
+  theme_classic() +   
   theme(
     legend.position = "none",
     axis.text.x = element_text(size = 18, face = "bold", color = "black"),
@@ -172,13 +160,11 @@ x1<-ggplot(data = summarize_SNPs_type, aes(y = MUT_TYPE, x = Prop, fill = MUT_TY
     axis.text.y = element_text(size = 18, face = "bold", color = "black",
                                margin = margin(r = 0)),
     axis.title.y = element_blank(),
-    
-    # ✅ Axe X et petits ticks
+   
     axis.line.x = element_line(color = "black", linewidth = 1),
     axis.ticks.x = element_line(color = "black", linewidth = 1),
     axis.ticks.length.x = unit(0.3, "cm"),
-    
-    # ✅ Taille du texte des facettes
+  
     strip.background = element_blank(),
     strip.text = element_text(size = 20, face = "bold", color = "black"),
     plot.title = element_text(face = "bold", hjust = 0.45, size = 20)
@@ -187,7 +173,7 @@ x1<-ggplot(data = summarize_SNPs_type, aes(y = MUT_TYPE, x = Prop, fill = MUT_TY
 
 # facet_wrap(reorder(Cancer,ordre)~.,ncol=1, scale="free")
 
-ggsave("15SNPs_compo.pdf", plot = x1, width = 5, height = 5, limitsize = FALSE, device = 'pdf', dpi = 300)
+ggsave("SNPs_compo.pdf", plot = x1, width = 5, height = 5, limitsize = FALSE, device = 'pdf', dpi = 300)
 
 dev.off()
 ####################
@@ -250,7 +236,7 @@ summarize_INDELs <- summarize_INDELs %>%
 summarize_INDELs$ordre<-NULL
 colnames(summarize_INDELs)<-c("Paire","Cancer","Variant Type","SNPs")
 
-write.table(x = summarize_INDELs,file = "15INDELs_summary.csv",quote = F,sep = ",",row.names = F,col.names = T)
+write.table(x = summarize_INDELs,file = "INDELs_summary.csv",quote = F,sep = ",",row.names = F,col.names = T)
 
 
 
@@ -259,7 +245,6 @@ write.table(x = summarize_INDELs,file = "15INDELs_summary.csv",quote = F,sep = "
 ## InDels 
 
 Loas_files_INDELs_mutect2<-Loas_files3_completed[Loas_files3_completed$Variant_Type=="INS"|Loas_files3_completed$Variant_Type=="DEL",]
-
 Loas_files_INDELs__INSE<-Loas_files_INDELs_mutect2[Loas_files_INDELs_mutect2$Variant_Type=="INS",]
 Loas_files_INDELs__INSE$LEN<-nchar(Loas_files_INDELs__INSE$Tumor_Seq_Allele2)
 Loas_files_INDELs__INSE$pos<-"+"
@@ -319,7 +304,7 @@ summarize_INDELs <- summarize_INDELs %>%
 summarize_INDELs$ordre<-NULL
 colnames(summarize_INDELs)<-c("Paire","Cancer","Variant Classification","SNPs")
 
-write.table(x = summarize_INDELs,file = "15INDELs_summary_variant.csv",quote = F,sep = ",",row.names = F,col.names = T)
+write.table(x = summarize_INDELs,file = "INDELs_summary_variant.csv",quote = F,sep = ",",row.names = F,col.names = T)
 
 
 #########
@@ -334,11 +319,10 @@ Full_summarize_INDELs <- Loas_files_INDELs__combi %>%
                 Depht_normal,Depht_tumor,VAF_N,VAF_T,TLOD,LEN,CADD_PHRED_1.7,Fishing)
 
 
-
 colnames(Full_summarize_INDELs)<-c("Paire","Cancer","Clonal","Variant Type","Variant Classification","Chromosome","Start","End","Reference Allele","Tumor Allele","Hugo Symbol","Transcript ID","Depht normal",
                                    "Depht tumor","VAF Normal",'VAF Tumor',"TLOD","InDels size","CADD_PHRED_1.7","Fishing")
 
-write.table(x = Full_summarize_INDELs,file = "15Full_INDELs_summary.csv",quote = F,sep = ";",row.names = F,col.names = T)
+write.table(x = Full_summarize_INDELs,file = "Full_INDELs_summary.csv",quote = F,sep = ";",row.names = F,col.names = T)
 
 ###########
 
@@ -371,9 +355,6 @@ summarize_INDELs <- Loas_files_INDELs__combi2 %>%
 
 colnames(summarize_INDELs)
 summarize_INDELs$y<-paste0(summarize_INDELs$pos,summarize_INDELs$LEN)
-
-
-
 
 summarize_INDELs$ordre<-1
 summarize_INDELs$ordre[summarize_INDELs$Cancer=="SCC"]<-2
@@ -409,16 +390,13 @@ x1 <- ggplot(data = summarize_INDELs, aes(y = Prop, x = reorder(y,as.numeric(y))
                                margin = margin(r = 0)),
     axis.title.y = element_blank(),
     
-    # ✅ Axe X et petits ticks
     axis.line.x = element_blank(),
     axis.ticks.x = element_line(color = "black", linewidth = 1),
     #axis.ticks.length.x = unit(0.3, "cm"),
     
-    # ✅ Taille du texte des facettes
     strip.background = element_blank(),
     strip.text = element_text(size = 20, face = "bold", color = "black"),
     plot.title = element_text(face = "bold", hjust = 0.45, size = 20)
-    
     
   )+
   facet_wrap(reorder(Cancer,ordre)~.,ncol=1, scale="free_y")
@@ -482,34 +460,21 @@ x2 <- ggplot(data = summarize_INDELs2, aes(y = Prop, x = reorder(Cancer,as.numer
                                margin = margin(r = 0)),
     axis.title.y = element_blank(),
     
-    
-    # ✅ Axe X et petits ticks
     axis.line.x = element_blank(),
     axis.ticks.x =  element_blank(),
     #axis.ticks.length.x = unit(0.3, "cm"),
     
-    # ✅ Taille du texte des facettes
     strip.background = element_blank(),
     strip.text = element_text(size = 20, face = "bold", color = "black"),
     plot.title = element_text(face = "bold", hjust = 0.45, size = 20)
     
-    
   )+
   facet_wrap(reorder(Cancer,ordre)~.,ncol=1, scale="free")
-
-
-
-
-
 
 bottom_row <- x2+x1+
   plot_layout(ncol = 2, guides = "collect")+ plot_layout(widths = c(1, 10))
 
-
-bottom_row
-
-
-ggsave("15INDELs_compo.pdf", plot = bottom_row, width = 12, height = 8, limitsize = FALSE, device = 'pdf', dpi = 300)
+ggsave("INDELs_compo.pdf", plot = bottom_row, width = 12, height = 8, limitsize = FALSE, device = 'pdf', dpi = 300)
 
 dev.off()
 
@@ -545,8 +510,6 @@ variant_colors <- c(
   "Non exonic" = "#F05C3B"
 )
 
-
-
 Result_SNPs<- data.frame(Paire = integer(),
                          ADC = integer(),
                          SCC = integer(),
@@ -562,65 +525,10 @@ Result_SNPs<- data.frame(Paire = integer(),
                          compare = integer(),
                          stringsAsFactors = FALSE)
 
-#Loas_files_SNPs<-Loas_files_SNPs[-which(Loas_files_SNPs$Variant_Classification=="",)]
-#           Loas_files_SNPs$Variant_Classification=="Unknown"|Loas_files_SNPs$Variant_Classification=="Silent")]<-"Non-coding"
-# Loas_files_SNPs$Variant_Classification
-unique(Loas_files_INDELs_mutect2$Variant_Classification)
 
+unique(Loas_files_INDELs_mutect2$Variant_Classification)
 datas_cliniques<-read.delim(file = "./Datas_cliniques.txt", header = T, sep = "\t")
 
-
-
-#Loas_files_SNPs$Cancer<-gsub("_crossed","",Loas_files_SNPs$Cancer)
-unique(Loas_files_SNPs$Paire)
-
-
-
-
-
-# 
-# 
-# lamlCommun <- maftools::read.maf(maf = Loas_files_SNPs[Loas_files_SNPs$New==12,], vc_nonSyn = unique(Loas_files_SNPs$Variant_Classification))
-# 
-# rainfallPlot(maf = lamlCommun, detectChangePoints = TRUE, pointSize = 0.4)
-# 
-# 
-# 
-# 
-# lamlCommun <- maftools::read.maf(maf = Loas_files_SNPs[Loas_files_SNPs$New==4&Loas_files_SNPs$Cancer=="ADC",], 
-#                                  vc_nonSyn = unique(Loas_files_SNPs$Variant_Classification))
-# rainfallPlot(maf = lamlCommun, detectChangePoints = TRUE, pointSize = 0.4)
-# lamlCommun <- maftools::read.maf(maf = Loas_files_SNPs[Loas_files_SNPs$New==1&Loas_files_SNPs$Cancer=="SCC",], 
-#                                  vc_nonSyn = unique(Loas_files_SNPs$Variant_Classification))
-# rainfallPlot(maf = lamlCommun, detectChangePoints = TRUE, pointSize = 0.4)
-# 
-# 
-# BiocManager::install("BSgenome.Hsapiens.UCSC.hg38")
-# # 
-# 
-# library(BSgenome.Hsapiens.UCSC.hg38)
-# 
-# 
-# lamlCommun <- maftools::read.maf(maf = Loas_files_SNPs[Loas_files_SNPs$New==6&Loas_files_SNPs$Cancer=="ADC",], 
-#                                  vc_nonSyn = unique(Loas_files_SNPs$Variant_Classification))
-# laml.tnm = trinucleotideMatrix(maf = lamlCommun, prefix = '', add = TRUE, ref_genome = "BSgenome.Hsapiens.UCSC.hg38")
-# plotApobecDiff(tnm = laml.tnm, maf = lamlCommun, pVal = 0.9)
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-unique(Loas_files_SNPs$Tumor_Sample_Barcode)
-# 
-# 
-#Loas_files_SNPs$Cancer<-gsub("_crossed","",Loas_files_SNPs$Cancer)
-unique(Loas_files_SNPs$Paire)[10]
-
-unique(Loas_files_SNPs$Cancer[Loas_files_SNPs$Tumor_Sample_Barcode=="Paire_15_ADC_GATK_somatic_filtered"])
-unique(Loas_files_SNPs$Cancer[Loas_files_SNPs$Tumor_Sample_Barcode=="Paire_15_SCC_GATK_somatic_filtered"])
 
 for (i in 1:length(unique(Loas_files_SNPs$Paire))){
   
@@ -629,11 +537,7 @@ for (i in 1:length(unique(Loas_files_SNPs$Paire))){
   my_sample1<-Loas_files_SNPs[which(Loas_files_SNPs$Paire==unique(Loas_files_SNPs$Paire)[i]&Loas_files_SNPs$Cancer=="SCC"),]
   my_sample3<-Loas_files_SNPs[which(Loas_files_SNPs$Paire==unique(Loas_files_SNPs$Paire)[i]&Loas_files_SNPs$Cancer=="ADC"),]
   
-  unique(my_sample3$Tumor_Sample_Barcode[my_sample3$Cancer=="ADC"])
-  unique(my_sample3$Cancer[my_sample3$Tumor_Sample_Barcode=="Paire_15_SCC_GATK_somatic_filtered"])
-  
   # #################
-  # 
   Maf_communs<-my_sample3[my_sample3$combi%in%my_sample1$combi,]
   Maf_communs$Tumor_Sample_Barcode
   Maf_communs$Variant_Classification[which(Maf_communs$Variant_Classification=="Non exonic")]<-""
@@ -643,9 +547,6 @@ for (i in 1:length(unique(Loas_files_SNPs$Paire))){
                                          "Reference_Allele", "Tumor_Seq_Allele2")]
     # maf_df_Commun
     sampCommun<-unique(lamlCommun@data$Tumor_Sample_Barcode)
-    sampCommun
-    maf_df_Commun$Tumor_Sample_Barcode
-    
     spemaf_df_Commun<-maf_df_Commun[maf_df_Commun$Tumor_Sample_Barcode==sampCommun,]
     # 
     vcf_df_Commun <- data.frame(
@@ -736,17 +637,11 @@ for (i in 1:length(unique(Loas_files_SNPs$Paire))){
     write.table(vcf_df_SCC, file = paste0("./MAFs_SCC/",sampSCC,".vcf"), append = TRUE, sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
   }
   
-  
-  
-  
   ################
   
   
   for (y in 1:length(unique(Loas_files_SNPs$Paire))){
     
-    #y<-1
-    # i<-12
-    # y<-12
     my_sample2<-Loas_files_SNPs[which(Loas_files_SNPs$Paire==unique(Loas_files_SNPs$Paire)[y]&Loas_files_SNPs$Cancer=="ADC"),]
     
     my_sample<-rbind(my_sample1,my_sample2)
@@ -792,14 +687,7 @@ Result2$count_variant<-NULL
 Result2<-unique(Result2)
 
 ResultCTR<-Result_SNPs[which(Result_SNPs$statut=="CTR"),]
-
 Result2$ctr<-max(ResultCTR$prop_commun)
-max(ResultCTR$prop_commun)
-sd(ResultCTR$prop_commun)
-
-
-colnames(SUM_my_sample)
-
 Result2a<-Result2[which(Result2$FIGO=="1a1"),]
 Result2b<-Result2[which(Result2$FIGO=="1b1"),]
 Result2c<-Result2[which(Result2$FIGO=="1b2"),]
@@ -807,10 +695,6 @@ Result2c<-Result2[which(Result2$FIGO=="1b2"),]
 
 
 max_prop<-max(Result_SNPs$prop_commun)
-
-Result2a$Figo_score
-
-Result2a$ctr
 
 
 df <- data.frame(x = factor(), y = numeric())
@@ -833,9 +717,6 @@ x10<-ggplot(df, aes(x, y)) +
     axis.line.x = element_blank(),
     plot.title = element_text(face = "bold", hjust = 0.45, size = 16)
   )
-
-
-
 
 
 x1a <-ggplot(data = Result2a, aes(x =  as.character(New), 
@@ -908,7 +789,6 @@ x1c <- ggplot(data = Result2c, aes(x = as.character(Result2c$New),
     plot.title = element_text(face = "bold", hjust = 0.45, size = 16)
   )
 
-
 ####
 Result3 <- Result_SNPs[Result_SNPs$statut != "CTR",]
 Result3a<-Result3[which(Result3$FIGO=="1a1"),]
@@ -923,21 +803,18 @@ all_variants <- unique(Result3$Variant_Classification)
 colors <- RColorBrewer::brewer.pal(n = length(all_variants), name = "Set2")  # or any palette you like
 names(colors) <- all_variants
 
-#####"
-
+#####
 
 Result3<-Result3%>%
   group_by(Paire,Cancer)%>%
   mutate(tot_sum=sum(count_variant))
 
 max_count<-max(Result3$tot_sum)
-######"
+######
 
-
-max_count<-max(Result3$tot_sum)
 # Start the plot
 x20<-ggplot(df, aes(x, y)) +
-  geom_bar(stat = "identity") +  # Won't actually draw anything because df is empty
+  geom_bar(stat = "identity") +  
   theme_void() +
   labs(y = "Number of INDELs") +
   ylim(as.numeric(max_count),0)+
@@ -1043,20 +920,15 @@ widths_bottom <- c(
 )
 
 
-
 top_row <- x10 + x1a + x1b + x1c + 
   plot_layout(ncol = 4, guides = "collect", widths = widths_top)+ theme(plot.margin = margin(0, 1, 0, 1, "cm"))
 
 bottom_row <- x20 + x2a + x2b + x2c + 
   plot_layout(ncol = 4, guides = "collect", widths = widths_bottom)+ theme(plot.margin = margin(0, 1, 0, 1, "cm"))
 
-
 final_plot <- top_row / bottom_row + plot_layout(heights = c(1, 1),tag_level = "keep",guides = "collect")&theme(plot.margin = margin(0, 0, 0, 0)) 
 
-final_plot
-
-ggsave("Part1_filtr15_commun_newnewnewFig2_SNV_commun.pdf", plot = final_plot, width = 12, height = 8, limitsize = FALSE, device = 'pdf', dpi = 300)
-#ggsave("filtr8_newnewnewFig2_SNV_commun.png", plot = final_plot, width = 12, height = 8, limitsize = FALSE, device = 'png', dpi = 300)
+ggsave("Commun_Fig2_SNV_commun.pdf", plot = final_plot, width = 12, height = 8, limitsize = FALSE, device = 'pdf', dpi = 300)
 
 dev.off()
 
@@ -1092,7 +964,6 @@ TMB_plot1 <- ggplot(Result4, aes(x = type, y = counting), fill = "grey") +
   stat_compare_means(method = "anova", label.y = 1,label="p.format",label.x.npc = "right") 
 
 
-colnames(Result4)
 TMB_plot2 <- ggplot(Result4, aes(x = FIGO, y = counting), fill = "grey") +
   geom_violin(alpha = 0.6, fill = "gray") +  # Violin plot for distributione
   geom_boxplot(width = 0.2, outlier.shape = NA, alpha = 0.8) +  # Boxplot inside violin
@@ -1111,8 +982,6 @@ TMB_plot2 <- ggplot(Result4, aes(x = FIGO, y = counting), fill = "grey") +
   stat_compare_means(method = "anova", label.y = 1,label="p.format",label.x.npc = "right") 
 
 
-
-
 TMB_plot3 <- ggplot(Result4, aes(x = Integration, y = counting)) +
   geom_violin(alpha = 0.6, fill = "gray") +
   geom_boxplot(width = 0.2, outlier.shape = NA, alpha = 0.8) +
@@ -1129,21 +998,8 @@ TMB_plot3 <- ggplot(Result4, aes(x = Integration, y = counting)) +
   ) +
   labs(y = "Number of mutation", title = "Integration Statut") +
   
-  # 🟡 Add statistical test brackets
+ 
   stat_compare_means(method = "anova", label.y = 1,label="p.format",label.x.npc = "right") 
-# stat_compare_means(
-#   comparisons = list(
-#     c("group1", "group2"),  # Replace with your actual group names
-#     c("group2", "group3")
-#     # Add more if needed
-#   ),
-#   method = "t.test",
-#   label = "p.signif",  # You can use "p.format" for actual p-value
-#   bracket.size = 0.5,
-#   tip.length = 0.03,
-#   size = 5
-# )
-
 
 TMB_plot4 <- ggplot(Result4, aes(x = Cancer, y = counting)) +
   geom_violin(alpha = 0.6, fill = "gray") +
@@ -1161,7 +1017,6 @@ TMB_plot4 <- ggplot(Result4, aes(x = Cancer, y = counting)) +
   ) +
   labs(y = "Number of mutation", title = "Integration Statut") +
   
-  # 🟡 Add statistical test brackets
   stat_compare_means(method = "anova", label.y = 1,label="p.format",label.x.npc = "right") 
 
 combi_row <- TMB_plot1 + TMB_plot2 + TMB_plot3 + TMB_plot4+
@@ -1171,7 +1026,7 @@ combi_row <- TMB_plot1 + TMB_plot2 + TMB_plot3 + TMB_plot4+
 combi_row
 
 # Save the plot
-ggsave("filtr15_newnewTMB_plot_by_Strain2.pdf", width = 12, height = 6, dpi = 300)
+ggsave("TMB_plot_by_Strain2.pdf", width = 12, height = 6, dpi = 300)
 
 
 Result3snps<-Result3
@@ -1183,37 +1038,6 @@ Result3snps<-Result3
 
 ################################################################################
 ##########################################  InDels ######################################################
-
-min(Loas_files_INDELs_mutect2$TLOD)
-
-unique(Loas_files_INDELs_mutect2$Tumor_Sample_Barcode[Loas_files_INDELs_mutect2$Paire==15&Loas_files_INDELs_mutect2$Cancer=="ADC"])
-
-unique(Loas_files_INDELs_mutect2$Otherinfo10[Loas_files_INDELs_mutect2$Paire==15&Loas_files_INDELs_mutect2$Cancer=="ADC"])
-
-min(Loas_files_INDELs_mutect2$Otherinfo10[Loas_files_INDELs_mutect2$Paire==15&Loas_files_INDELs_mutect2$Cancer=="ADC"])
-
-xx<-table(Loas_files_INDELs_mutect2$Otherinfo8[Loas_files_INDELs_mutect2$Paire == 15 & Loas_files_INDELs_mutect2$Cancer == "ADC"])
-table(Loas_files_INDELs_mutect2$Otherinfo10)
-
-df_counts <- as.data.frame(table(
-  Loas_files_INDELs_mutect2$Otherinfo8[
-    Loas_files_INDELs_mutect2$Paire == 15 &
-      Loas_files_INDELs_mutect2$Cancer == "ADC"
-  ]
-))
-
-
-df_counts_snps <- as.data.frame(table(
-  Loas_files_SNPs$Otherinfo10[
-    Loas_files_SNPs$Paire == 15 &
-      Loas_files_SNPs$Cancer == "ADC"
-  ]
-))
-
-
-
-grep("(A{1,}|T{1,}|C{1,}|G{1,})", df$Otherinfo10, value = TRUE)
-grepl("(A{3,}|T{3,}|C{3,}|G{3,})", df_counts$Otherinfo10, perl = TRUE)
 
 Result_SNPs<- data.frame(Paire = integer(),
                          ADC = integer(),
@@ -1233,10 +1057,6 @@ Result_SNPs<- data.frame(Paire = integer(),
 
 
 Loas_files_INDELs_mutect2$Variant_Classification[which(Loas_files_INDELs_mutect2$Variant_Classification==""| Loas_files_INDELs_mutect2$Variant_Classification=="Unknown")]<-"Non exonic"
-
-#Loas_files_INDELs_mutect2<-Loas_files_INDELs_mutect2[!Loas_files_INDELs_mutect2$Variant_Classification=="Non exonic",]
-unique(Loas_files_INDELs_mutect2$Paire)
-
 
 for (i in 1:length(unique(Loas_files_INDELs_mutect2$Paire))){
   my_sample1<-Loas_files_INDELs_mutect2[which(Loas_files_INDELs_mutect2$Paire==unique(Loas_files_INDELs_mutect2$Paire)[i]&Loas_files_INDELs_mutect2$Cancer=="SCC"),]
@@ -1342,20 +1162,12 @@ for (i in 1:length(unique(Loas_files_INDELs_mutect2$Paire))){
   }
   
   
-  
   ################
   for (y in 1:length(unique(Loas_files_INDELs_mutect2$Paire))){
-    Loas_files_INDELs_mutect2$Reference_Allele
+   
     my_sample2<-Loas_files_INDELs_mutect2[which(Loas_files_INDELs_mutect2$Paire==unique(Loas_files_INDELs_mutect2$Paire)[y]&Loas_files_INDELs_mutect2$Cancer=="ADC"),]
     my_sample<-rbind(my_sample1,my_sample2)
-    # 
-    # my_sample1$combi3
-    # my_sample2$combi3
-    # my_sample_commun<-my_sample1[my_sample1$combi3%in%my_sample2$combi3,]
-    # my_sample_commun2<-my_sample2[my_sample2$combi3%in%my_sample1$combi3,]
-
     
-    # Loas_files_INDELs_mutect2$Variant_Classification
     SUM_my_sample<-my_sample%>%
       mutate(total_mut=n())%>%
       group_by(Chromosome,Start_Position,Reference_Allele,Tumor_Seq_Allele2,End_Position) %>%
@@ -1395,31 +1207,23 @@ Result2$count_variant<-NULL
 Result2<-unique(Result2)
 
 ResultCTR<-Result_SNPs[which(Result_SNPs$statut=="CTR"),]
-ResultCTR
 Result2$ctr<-max(ResultCTR$prop_commun)
 
 Result2a<-Result2[which(Result2$FIGO=="1a1"),]
 Result2b<-Result2[which(Result2$FIGO=="1b1"),]
 Result2c<-Result2[which(Result2$FIGO=="1b2"),]
 
-
-
 max_prop<-max(Result_SNPs$prop_commun)
 max_count<-max(Result_SNPs$count_variant)
-Result2a$Figo_score
 
 
-
-#####"
-
-
+#####
 Result3<-Result3%>%
   group_by(Paire,Cancer)%>%
   mutate(tot_sum=sum(count_variant))
 
 max_count<-max(Result3$tot_sum)
-######"
-
+######
 
 df <- data.frame(x = factor(), y = numeric())
 
@@ -1493,7 +1297,7 @@ x1b <- ggplot(data = Result2b, aes(x =  as.character(Result2b$New),
     strip.text = element_blank(),
     plot.title = element_text(face = "bold", hjust = 0.45, size = 16)
   )
-x1b
+
 x1c <- ggplot(data = Result2c, aes(x = as.character(Result2c$New), 
                                    y = prop_commun)) +
   geom_bar(stat = "identity", fill = "gray") +
@@ -1516,11 +1320,8 @@ x1c <- ggplot(data = Result2c, aes(x = as.character(Result2c$New),
     plot.title = element_text(face = "bold", hjust = 0.45, size = 16)
   )
 
-
 ####
 Result3 <- Result_SNPs[Result_SNPs$statut != "CTR",]
-
-unique(Result3$Variant_Type)
 
 Result3_complet<-Result3%>%
   dplyr::select(New,Variant_Classification,Cancer,count_variant)%>%
@@ -1537,8 +1338,6 @@ Result3_complet$Variant_Classification[Result3_complet$Variant_Classification==(
                                          Result3_complet$Variant_Classification==("In_Frame_Del")|
                                          Result3_complet$Variant_Classification==("In_Frame_Ins")]<-"Inframe"
 
-library(dplyr)
-library(tidyr)
 Result3_complet2<-Result3_complet%>%
   group_by(New,Variant_Classification,Cancer)%>%
   mutate(count_variant=sum(count_variant))%>%
@@ -1676,20 +1475,13 @@ bottom_row <- x20 + x2a + x2b + x2c +
   plot_layout(ncol = 4, guides = "collect", widths = widths_bottom)+ theme(plot.margin = margin(0, 1, 0, 1, "cm"))
 
 
-x2a
-
 final_plot <- top_row / bottom_row + plot_layout(heights = c(1, 1),tag_level = "keep",guides = "collect")&theme(plot.margin = margin(0, 0, 0, 0)) 
-top_row
-final_plot
 
 
 
-ggsave("15_newnewFig2_INDELs_commun_dplyr.pdf", plot = final_plot, width = 12, height = 8, limitsize = FALSE, device = 'pdf', dpi = 300)
-ggsave("8_newnewFig2_INDELs_commun_select.png", plot = final_plot, width = 12, height = 8, limitsize = FALSE, device = 'png', dpi = 300)
+ggsave("Fig2_INDELs_commun_dplyr.pdf", plot = final_plot, width = 12, height = 8, limitsize = FALSE, device = 'pdf', dpi = 300)
 
-colnames(Result3)
 
-###################
 #############
 Result4<-Result3%>%
   group_by(Paire,FIGO,Cancer,Integration,type)%>%
@@ -1718,7 +1510,6 @@ TMB_plot1 <- ggplot(Result4, aes(x = type, y = counting), fill = "grey") +
   stat_compare_means(method = "anova", label.y = 1,label="p.format",label.x.npc = "right") 
 
 
-colnames(Result4)
 TMB_plot2 <- ggplot(Result4, aes(x = FIGO, y = counting), fill = "grey") +
   geom_violin(alpha = 0.6, fill = "gray") +  # Violin plot for distributione
   geom_boxplot(width = 0.2, outlier.shape = NA, alpha = 0.8) +  # Boxplot inside violin
@@ -1737,7 +1528,6 @@ TMB_plot2 <- ggplot(Result4, aes(x = FIGO, y = counting), fill = "grey") +
   stat_compare_means(method = "anova", label.y = 1,label="p.format",label.x.npc = "right") 
 
 
-
 TMB_plot3 <- ggplot(Result4, aes(x = Integration, y = counting)) +
   geom_violin(alpha = 0.6, fill = "gray") +  # Violin plot for distributione
   geom_boxplot(width = 0.2, outlier.shape = NA, alpha = 0.8) +  # Boxplot inside violin
@@ -1754,10 +1544,6 @@ TMB_plot3 <- ggplot(Result4, aes(x = Integration, y = counting)) +
   ) +
   labs(y = "Number of mutation", title = "Integration Statut")+
   stat_compare_means(method = "anova", label.y = 1,label="p.format",label.x.npc = "right") 
-TMB_plot3
-
-
-
 
 TMB_plot4 <- ggplot(Result4, aes(x = Cancer, y = counting)) +
   geom_violin(alpha = 0.6, fill = "gray") +
@@ -1781,10 +1567,8 @@ TMB_plot4 <- ggplot(Result4, aes(x = Cancer, y = counting)) +
 combi_row <- TMB_plot1 + TMB_plot2 + TMB_plot3 + TMB_plot4+
   plot_layout(ncol = 4, guides = "collect")
 
-combi_row
-Result2c$ctr
 # Save the plot
-ggsave("15_TMB_plot_by_Strain2_INDELs_select.pdf", width = 12, height = 6, dpi = 300)
+ggsave("TMB_plot_by_Strain2_INDELs_select.pdf", width = 12, height = 6, dpi = 300)
 
 Result3indels<-Result3
 
@@ -1844,11 +1628,8 @@ TMB_plot1 <- ggplot(Result4, aes(x = Cancer, y = counting)) +
     legend.position = "none"
   ) +
   labs(y = "Number of mutation", title = "Integration Statut") +
-  
-  # 🟡 Add statistical test brackets
-  stat_compare_means(method = "t.test", label.y = 1,label="p.format",label.x.npc = "right") 
 
-TMB_plot1
+  stat_compare_means(method = "t.test", label.y = 1,label="p.format",label.x.npc = "right") 
 
 Result4$type[Result4$type=="HPV58"]<-"Other HPVs"
 Result4$type[Result4$type=="HPV45"]<-"Other HPVs"
@@ -1944,7 +1725,7 @@ combi_row <- TMB_plot1 + TMB_plot2 + TMB_plot3 + TMB_plot4+
 combi_row
 
 # Save the plot
-ggsave("16_TMB_plot_by_Strain2_FULLs_select.pdf", width = 12, height = 6, dpi = 300)
+ggsave("TMB_plot_by_Strain2_FULLs_select.pdf", width = 12, height = 6, dpi = 300)
 
 
 
@@ -2002,10 +1783,7 @@ TMB_plot1 <- ggplot(Result4, aes(x = Cancer, y = counting)) +
   ) +
   labs(y = "Number of mutation", title = "Integration Statut") +
   
-  # 🟡 Add statistical test brackets
   stat_compare_means(method = "t.test", label.y = 1,label="p.format",label.x.npc = "right") 
-
-TMB_plot1
 
 Result4$type[Result4$type=="HPV58"]<-"Other HPVs"
 Result4$type[Result4$type=="HPV45"]<-"Other HPVs"
@@ -2093,19 +1871,11 @@ TMB_plot4 <- ggplot(Result4, aes(x = Integration, y = counting)) +
   labs(y = "Number of mutation", title = "Integration Statut")+
   stat_compare_means(method = "t.test", label.y = 1,label="p.format",label.x.npc = "right") 
 
-
-
 combi_row <- TMB_plot1 + TMB_plot2 + TMB_plot3 + TMB_plot4+
   plot_layout(ncol = 4)
 
-combi_row
-
 # Save the plot
-ggsave("16_TMB_plot_by_Strain2_FULLs_select.pdf", width = 12, height = 6, dpi = 300)
-
-
-
-
+ggsave("TMB_plot_by_Strain2_FULLs_select.pdf", width = 12, height = 6, dpi = 300)
 
 
 
@@ -2258,17 +2028,10 @@ ggsave(myOutFile1, width=15, height=10, limitsize = FALSE, device='pdf', dpi=300
 
 
 
+############################# Mutation Impact ###########################################
 
 
-
-
-
-
-
-
-
-
-# ==================== 4. Tous les gènes KEGG humains par pathway ====================
+# ====================  Tous les gènes KEGG humains par pathway ====================
 message("Téléchargement de tous les pathways KEGG humains...")
 
 kegg_pathways <- keggList("pathway", "hsa")
@@ -2277,8 +2040,6 @@ pathway_df <- data.frame(
   Description  = gsub(" - Homo sapiens \\(human\\)", "", kegg_pathways),
   stringsAsFactors = FALSE
 )
-
-message("Téléchargement des gènes par pathway... (cela peut prendre plusieurs minutes)")
 
 get_entrez_genes <- function(pid) {
   entry <- tryCatch(keggGet(pid)[[1]], error = function(e) return(NULL))
@@ -2290,7 +2051,6 @@ get_entrez_genes <- function(pid) {
 entrez_list <- lapply(pathway_df$PathwayID, get_entrez_genes)
 names(entrez_list) <- pathway_df$Description
 
-# Conversion ENTREZ → SYMBOL
 message("Conversion ENTREZ → SYMBOL pour chaque pathway...")
 
 symbol_list <- lapply(entrez_list, function(entrez_ids) {
@@ -2304,7 +2064,6 @@ symbol_list <- lapply(entrez_list, function(entrez_ids) {
   )
 })
 
-# Construction du data.frame final
 pathway_gene_df <- do.call(rbind, lapply(names(symbol_list), function(pw) {
   genes <- symbol_list[[pw]]
   if (is.na(genes[1])) return(NULL)
@@ -2315,7 +2074,6 @@ pathway_gene_df <- do.call(rbind, lapply(names(symbol_list), function(pw) {
   )
 }))
 
-# Nettoyage des doublons
 pathway_gene_df <- unique(pathway_gene_df)
 
 
@@ -2325,16 +2083,9 @@ pathway_gene_df <- unique(pathway_gene_df)
 ######################################################  ######################################################  ###################################################### 
 
 Loas_files3<-read.delim(file = "Mutect2_VCF0.8.maf", header = T, sep = "\t")
-# Loas_files3<-subset(Loas_files3,
-#                     CADD_PHRED_1.7 > 20 &
-#                       # REVEL_score > 0.5 &
-#                       MutationTaster_pred == "D" &
-#                       Variant_Classification %in% c("Missense_Mutation", "Nonsense_Mutation", "Splice_Site"))
 
 Loas_files_INDELs_mutect2<-Loas_files3[Loas_files3$Variant_Type=="INS"|Loas_files3$Variant_Type=="DEL",]
 Loas_files_SNPs<-Loas_files3[Loas_files3$Variant_Type=="SNP"|Loas_files3$Variant_Type=="TNP"|Loas_files3$Variant_Type=="DNP",]
-
-
 
 datas_cliniques<-read.delim(file = "./Datas_cliniques.txt", header = T, sep = "\t")
 CODING_snps<-Loas_files_SNPs[Loas_files_SNPs$Variant_Classification=="Missense_Mutation"|Loas_files_SNPs$Variant_Classification=="Nonsense_Mutation"|Loas_files_SNPs$Variant_Classification=="Nonstop_Mutation"|Loas_files_SNPs$Variant_Classification=="Translation_Start_Site",]
@@ -2363,7 +2114,6 @@ Ful_datas$Paire<-gsub("17","15",Ful_datas$Paire)
 Ful_datas <- merge(datas_cliniques, Ful_datas, by.x = "Paire", by.y = "Paire")
 
 Ful_datas2<-Ful_datas[Ful_datas$Seg_mean > 0.6 | Ful_datas$Seg_mean < -1,]
-
 
 COMBI_cnvs<-Ful_datas2[,c('New','TYPE','gene','sig')]
 COMBI_cnvs$Chromosome<-"."
@@ -2512,41 +2262,15 @@ x0 <- ggplot(COMBI_analyze, aes(y = factor(Cancer), fill = Mut)) +
     legend.position = "none" 
   )
 
-x0
-# # 1) Build a single canonical gene ordering from COMBI_plot3 (adjust asc/desc below if you prefer)
-# gene_levels <- COMBI_plot3 %>%
-#   distinct(Gene, .keep_all = TRUE) %>%
-#   arrange(cross) %>%    # ascending ORDER: smallest PROP -> bottom ; largest -> top
-#   pull(Gene)%>%head(50)
-COMBI_plot3$cross
-
 gene_levels <- COMBI_plot_selection %>%
   #distinct(Gene, .keep_all = TRUE) %>%
   #arrange(cross) %>%  
   head(50)  %>%# ascending order
   dplyr::select(Gene) 
-# dplyr::select only the first 50 genes
 
-# 
-# COMBI_plot_selection2SCC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_ADC_analyze$Gene,]
-# gene_levels <- COMBI_plot_selection2SCC %>%
-#   filter(cross > 2) %>%
-#   dplyr::select(Gene)
-
-gene_levels$Gene
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
 
-
-
-# 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
-# 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
 x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(as.numeric(COMBI_plot3$cross))))) +
   geom_col(width = 1, fill = "black",col="white") +          # change fill if you want a different color
   #  facet_grid(. ~ New, switch = "x") +             # same faceting as x2 so columns align
@@ -2558,7 +2282,7 @@ x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(as.
   theme(
     axis.title = element_blank(),
     panel.grid = element_blank(),
-    axis.text.y = element_blank()                 # hide duplicate gene labels (keep them in x2 if desired)
+    axis.text.y = element_blank()               
   )
 
 
@@ -2594,9 +2318,6 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
   )
 
 
-x2_clean
-
-
 # 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
 x0_clean <- x0 + theme(legend.position = "none")
 
@@ -2610,9 +2331,7 @@ final_plot <- top_row / bottom_row2 +
   plot_layout(heights = c(1, 4), guides = "collect") &
   theme(legend.position = "left")
 
-# show
 final_plot
-
 ggsave("FULL_Full_total_genes.pdf", plot = final_plot, width = 12, height = 12, limitsize = FALSE, device = 'pdf', dpi = 300)
 
 
@@ -2644,39 +2363,6 @@ dotplot(kegg_enrich, showCategory = 331)
 dev.off()
 
 
-# 
-# 
-# # Extraire les résultats sous forme de data.frame
-# kegg_df <- as.data.frame(kegg_enrich)
-# 
-# # Récupérer les noms (colonne "Description")
-# kegg_pathways <- kegg_df$Description
-# 
-# # Voir les N premiers (ici 331 si tu veux exactement ceux du barplot)
-# head(kegg_pathways, 331)
-# 
-# 
-# hpv_genes <- keggGet("hsa05165")[[1]]$GENE
-# 
-# 
-# sel<-COMBI_SCC_analyze[COMBI_SCC_analyze$Gene%in%hpv_genes_symbols,]
-# 
-# 
-# # Les gènes KEGG sont alternés : EntrezID, Description
-# hpv_genes_symbols <- hpv_genes[seq(2, length(hpv_genes), by = 2)]
-# 
-# # Extraire juste le nom du gène en enlevant la description
-# hpv_genes_symbols <- sapply(strsplit(hpv_genes_symbols, ";"), `[`, 1)
-# 
-# # Résultat final
-# hpv_genes_symbols <- unique(trimws(hpv_genes_symbols))
-# print(hpv_genes_symbols)
-# 
-# 
-# hpv_genes_symbols=="COL4A6"
-
-
-
 
 ############################################################################################################
 #####################################      ADC    ##########################################################
@@ -2688,13 +2374,9 @@ COMBI_plot <- COMBI_ADC_analyze
 COMBI_plot2<-unique(COMBI_plot[,c("New","Cancer","Gene","FillColor","cross")])
 COMBI_plot3<-unique(COMBI_plot[,c("Gene","cross")])
 COMBI_plot_selection<-unique(COMBI_plot[,c("Gene","cross")])
-
 COMBI_plot4<-data.frame(New=c(12:1),VC=c(12:1))
-
-
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 12:1)
 COMBI_ADC_analyze$New <- factor(COMBI_ADC_analyze$New, levels = 12:1)
-COMBI_plot$New
 
 x0 <- ggplot(COMBI_plot, aes(x = reorder(New, -New), fill = Mut)) +
   geom_bar(position = "stack", col = "white") +
@@ -2725,17 +2407,6 @@ x0 <- ggplot(COMBI_plot, aes(x = reorder(New, -New), fill = Mut)) +
     legend.position = "none"
   )
 
-x0
-
-
-# # 1) Build a single canonical gene ordering from COMBI_plot3 (adjust asc/desc below if you prefer)
-# gene_levels <- COMBI_plot3 %>%
-#   distinct(Gene, .keep_all = TRUE) %>%
-#   arrange(cross) %>%    # ascending ORDER: smallest PROP -> bottom ; largest -> top
-#   pull(Gene)%>%head(50)
-COMBI_plot3$cross
-
-library(dplyr)
 
 #COMBI_plot_selection2ADC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_SCC_analyze$Gene,]
 gene_levels <- COMBI_plot_selection %>%
@@ -2746,14 +2417,6 @@ gene_levels_adc <- gene_levels$Gene
 
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-
-
 
 # 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
 x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as.numeric(COMBI_plot3$cross))))) +
@@ -2773,7 +2436,7 @@ x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as
     axis.text.y = element_text(angle = 0, size = 12)# hide duplicate gene labels (keep them in x2 if desired)
   )
 
-x0_clean
+
 # Force factor levels 1–12 in both data frames
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
 COMBI_plot2$New <- factor(COMBI_plot2$New, levels = 1:12)
@@ -2801,7 +2464,6 @@ COMBI_plot2_filled <- COMBI_plot2_filled %>%
     Gene = factor(Gene, levels = unique(Gene[order(-cross,Gene)]))
   )
 
-COMBI_plot2_filled
 
 x2_clean <- ggplot(COMBI_plot2_filled, aes(
   x = factor(reorder(x_label,-as.numeric(New))),
@@ -2823,28 +2485,16 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
   )
 
 
-x2_clean
-
-dev.off()
-
-
-
-x2_clean
-x0_clean
 
 # 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
 x0_clean <- x0 + theme(legend.position = "none")
 
 # 4) Layout:
-# top row = x0 | spacer
-# bottom row = x2 | x1
 top_row    <- plot_spacer()|x1_clean   # spacer prevents x1 from spanning up
 top_row2<-top_row+plot_layout( widths = c(4, 17), guides = "collect") 
-top_row2
 bottom_row <- x0_clean | x2_clean
 bottom_row2<-bottom_row+plot_layout( widths = c(3, 15), guides = "collect") 
-bottom_row
-top_row
+
 final_plot <- top_row2 / bottom_row2 +
   plot_layout(heights = c(1, 4), guides = "collect") &
   theme(legend.position = "none")
@@ -2854,18 +2504,10 @@ final_plot
 
 ggsave("FULL_ADC_total_genes.pdf", plot = final_plot, width = 14, height = 6, limitsize = FALSE, device = 'pdf', dpi = 300)
 
-
-#############################################
-#############################################
-#############################################
-
-
-
 ############################################################################################################
 #####################################      SCC    ##########################################################
 ############################################################################################################
 ############################################################################################################
-#####
 
 COMBI_plot <- COMBI_SCC_analyze
 COMBI_plot2<-unique(COMBI_plot[,c("New","Cancer","Gene","FillColor","cross")])
@@ -2874,13 +2516,9 @@ COMBI_plot_selection<-unique(COMBI_plot[,c("Gene","cross")])
 
 COMBI_plot4<-data.frame(New=c(1:12),VC=c(1:12))
 
-
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
 COMBI_SCC_analyze$New <- factor(COMBI_SCC_analyze$New, levels = 1:12)
-COMBI_plot$Mut
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+
 
 # On force New comme numérique de 1 à 12 et on complète
 COMBI_plot <- COMBI_plot %>%
@@ -2918,23 +2556,6 @@ x0 <- ggplot(COMBI_plot, aes(x = reorder(factor(New),-New), y = Mut_num, fill = 
     legend.position = "none"
   )
 
-x0
-
-
-
-# # 1) Build a single canonical gene ordering from COMBI_plot3 (adjust asc/desc below if you prefer)
-# gene_levels <- COMBI_plot3 %>%
-#   distinct(Gene, .keep_all = TRUE) %>%
-#   arrange(cross) %>%    # ascending ORDER: smallest PROP -> bottom ; largest -> top
-#   pull(Gene)%>%head(50)
-COMBI_plot3$cross
-
-library(dplyr)
-COMBI_SCC_analyze
-
-#COMBI_plot_selection2SCC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_SCC_analyze$Gene,]
-
-
 
 gene_levels <- COMBI_SCC_analyze %>%
   filter(cross > 2) %>%
@@ -2944,13 +2565,6 @@ gene_levels_SCC <- gene_levels$Gene
 
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-
 
 
 # 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
@@ -2999,7 +2613,6 @@ COMBI_plot2_filled <- COMBI_plot2_filled %>%
     Gene = factor(Gene, levels = unique(Gene[order(-cross,Gene)]))
   )
 
-COMBI_plot2_filled
 
 x2_clean <- ggplot(COMBI_plot2_filled, aes(
   x = factor(reorder(x_label,-as.numeric(New))),
@@ -3019,15 +2632,6 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
     axis.text.y = element_blank(),
     panel.grid = element_blank()
   )
-
-
-x2_clean
-
-dev.off()
-
-
-
-
 
 
 # 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
@@ -3060,21 +2664,18 @@ COMBI_plot3_SCC<-COMBI_plot3
 
 ###########################
 # ==================== 1. Conversion SYMBOL → ENTREZ ====================
-message("Conversion des gènes SYMBOL en ENTREZID...")
 gene_df <- bitr(COMBI_SCC_analyze$Gene,
                 fromType = "SYMBOL",
                 toType   = "ENTREZID",
                 OrgDb    = org.Hs.eg.db)
 
 # ==================== 2. Enrichissement KEGG ====================
-message("Lancement de l'enrichissement KEGG...")
 kegg_enrich <- enrichKEGG(
   gene         = gene_df$ENTREZID,
   organism     = 'hsa',
   pvalueCutoff = 0.05
 )
 
-# Rendre les résultats lisibles (ENTREZ → SYMBOL)
 kegg_annotated <- setReadable(kegg_enrich, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
 kegg_df <- as.data.frame(kegg_annotated)
 
@@ -3127,7 +2728,7 @@ x1_clean <- ggplot(COMBI_plot3_join, aes(x = cross, y = Pathway)) +
   )
 
 bottom_row2 <- x1_clean / x2_clean
-bottom_row2
+
 ggsave("CADD_FULL_SCC_total_genes_barplot.pdf",
        plot = bottom_row2,
        width = 14, height = 6,
@@ -3139,14 +2740,12 @@ ggsave("CADD_FULL_SCC_total_genes_barplot.pdf",
 
 ###########################
 # ==================== 1. Conversion SYMBOL → ENTREZ ====================
-message("Conversion des gènes SYMBOL en ENTREZID...")
 gene_df <- bitr(COMBI_ADC_analyze$Gene,
                 fromType = "SYMBOL",
                 toType   = "ENTREZID",
                 OrgDb    = org.Hs.eg.db)
 
 # ==================== 2. Enrichissement KEGG ====================
-message("Lancement de l'enrichissement KEGG...")
 kegg_enrich <- enrichKEGG(
   gene         = gene_df$ENTREZID,
   organism     = 'hsa',
@@ -3172,7 +2771,6 @@ dev.off()
 
 
 # ==================== 5. Jointure gènes enrichis/pathways ====================
-message("Jointure avec les gènes CADD_COMBI...")
 
 df_merged_ADC <- inner_join(COMBI_ADC, pathway_gene_df, by = c("Gene" = "GeneSymbol"))
 
@@ -3207,14 +2805,11 @@ x1_clean <- ggplot(COMBI_plot3_join, aes(x = cross, y = Pathway)) +
   )
 
 bottom_row2 <- x1_clean / x2_clean
-bottom_row2
+
 ggsave("CADD_FULL_ADC_total_genes_barplot.pdf",
        plot = bottom_row2,
        width = 14, height = 6,
        limitsize = FALSE, device = 'pdf', dpi = 300)
-
-message("✅ Script terminé.")
-
 
 
 test_for_fulladc<-COMBI_plot3_join
@@ -3227,9 +2822,6 @@ test_for_fulladc<-COMBI_plot3_join
 Loas_files3<-read.delim(file = "Mutect2_VCF0.8.maf", header = T, sep = "\t")
 Loas_files3<-subset(Loas_files3,
                     CADD_PHRED_1.7 > 20 ) #&
-# REVEL_score > 0.5 &
-#  MutationTaster_pred == "D" &
-# Variant_Classification %in% c("Missense_Mutation", "Nonsense_Mutation", "Splice_Site"))
 
 Loas_files_INDELs_mutect2<-Loas_files3[Loas_files3$Variant_Type=="INS"|Loas_files3$Variant_Type=="DEL",]
 Loas_files_SNPs<-Loas_files3[Loas_files3$Variant_Type=="SNP"|Loas_files3$Variant_Type=="TNP"|Loas_files3$Variant_Type=="DNP",]
@@ -3238,18 +2830,15 @@ Loas_files_SNPs<-Loas_files3[Loas_files3$Variant_Type=="SNP"|Loas_files3$Variant
 
 datas_cliniques<-read.delim(file = "./Datas_cliniques.txt", header = T, sep = "\t")
 CODING_snps<-Loas_files_SNPs[Loas_files_SNPs$Variant_Classification=="Missense_Mutation"|Loas_files_SNPs$Variant_Classification=="Nonsense_Mutation"|Loas_files_SNPs$Variant_Classification=="Nonstop_Mutation"|Loas_files_SNPs$Variant_Classification=="Translation_Start_Site",]
-#CODING_snps<- merge(x=datas_cliniques, y= CODING_snps, by = "Paire" )
 COMBI_snps<-CODING_snps[,c('New','Cancer','Hugo_Symbol','Variant_Classification','Chromosome','Start_Position','Reference_Allele','End_Position','Tumor_Seq_Allele2')]
 
 CODING_INDELs<-Loas_files_INDELs_mutect2[!Loas_files_INDELs_mutect2$Variant_Classification=="Non exonic",]
-#CODING_INDELs<- merge(x=datas_cliniques, y= CODING_INDELs, by = "Paire" )
 COMBI_indels<-CODING_INDELs[,c('New','Cancer','Hugo_Symbol','Variant_Type','Chromosome','Start_Position','Reference_Allele','End_Position','Tumor_Seq_Allele2')]
 
 ########################################################"
 gene_refs<-read.delim("../CNV_analyse/output_CDS4_Refs_genes_HG38.full.txt",header = F)
 
 datas_cliniques <- read.delim(file = "./Datas_cliniques.txt", header = TRUE, sep = "\t")
-
 
 Ful_datas<-read.delim(file = "./CNVs/full_gene_focal_event2.txt", header = T, sep = "\t")
 Ful_datas$Paire_num<-gsub("Paire_(\\d+)","\\1",Ful_datas$Paire_ID)
@@ -3260,9 +2849,7 @@ Ful_datas$sig<-"AMP"
 Ful_datas$sig[which(Ful_datas$Seg_mean<0)]<-"DEL"
 Ful_datas$Paire<-gsub("17","15",Ful_datas$Paire)
 Ful_datas <- merge(datas_cliniques, Ful_datas, by.x = "Paire", by.y = "Paire")
-
 Ful_datas2<-Ful_datas[Ful_datas$Seg_mean > 0.6 | Ful_datas$Seg_mean < -1,]
-
 
 COMBI_cnvs<-Ful_datas2[,c('New','TYPE','gene','sig')]
 COMBI_cnvs$Chromosome<-"."
@@ -3333,7 +2920,6 @@ COMBI_COM_analyze<-COMBI_COM%>%
   ungroup()%>%
   mutate(FillColor = ifelse(cross2 > 1, "Multi", Mut))%>%
   arrange(cross)
-
 
 COMBI_ADC_analyze<-COMBI_ADC%>%
   group_by(New,Gene,Cancer)%>%
@@ -3423,28 +3009,11 @@ gene_levels <- COMBI_plot_selection %>%
   #arrange(cross) %>%  
   head(50)  %>%# ascending order
   dplyr::select(Gene) 
-# dplyr::select only the first 50 genes
 
-# 
-# COMBI_plot_selection2SCC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_ADC_analyze$Gene,]
-# gene_levels <- COMBI_plot_selection2SCC %>%
-#   filter(cross > 2) %>%
-#   dplyr::select(Gene)
-
-gene_levels$Gene
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
 
 
-
-# 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
-# 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
 x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(as.numeric(COMBI_plot3$cross))))) +
   geom_col(width = 1, fill = "black",col="white") +          # change fill if you want a different color
   #  facet_grid(. ~ New, switch = "x") +             # same faceting as x2 so columns align
@@ -3456,7 +3025,7 @@ x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(as.
   theme(
     axis.title = element_blank(),
     panel.grid = element_blank(),
-    axis.text.y = element_blank()                 # hide duplicate gene labels (keep them in x2 if desired)
+    axis.text.y = element_blank()            
   )
 
 
@@ -3490,9 +3059,6 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
     axis.text.y = element_text(size = 8),
     panel.grid = element_blank()
   )
-
-
-x2_clean
 
 
 # 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
@@ -3542,39 +3108,6 @@ dotplot(kegg_enrich, showCategory = 331)
 dev.off()
 
 
-# 
-# 
-# # Extraire les résultats sous forme de data.frame
-# kegg_df <- as.data.frame(kegg_enrich)
-# 
-# # Récupérer les noms (colonne "Description")
-# kegg_pathways <- kegg_df$Description
-# 
-# # Voir les N premiers (ici 331 si tu veux exactement ceux du barplot)
-# head(kegg_pathways, 331)
-# 
-# 
-# hpv_genes <- keggGet("hsa05165")[[1]]$GENE
-# 
-# 
-# sel<-COMBI_SCC_analyze[COMBI_SCC_analyze$Gene%in%hpv_genes_symbols,]
-# 
-# 
-# # Les gènes KEGG sont alternés : EntrezID, Description
-# hpv_genes_symbols <- hpv_genes[seq(2, length(hpv_genes), by = 2)]
-# 
-# # Extraire juste le nom du gène en enlevant la description
-# hpv_genes_symbols <- sapply(strsplit(hpv_genes_symbols, ";"), `[`, 1)
-# 
-# # Résultat final
-# hpv_genes_symbols <- unique(trimws(hpv_genes_symbols))
-# print(hpv_genes_symbols)
-# 
-# 
-# hpv_genes_symbols=="COL4A6"
-
-
-
 
 ############################################################################################################
 #####################################      ADC    ##########################################################
@@ -3588,11 +3121,8 @@ COMBI_plot3<-unique(COMBI_plot[,c("Gene","cross")])
 COMBI_plot_selection<-unique(COMBI_plot[,c("Gene","cross")])
 
 COMBI_plot4<-data.frame(New=c(12:1),VC=c(12:1))
-
-
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 12:1)
 COMBI_ADC_analyze$New <- factor(COMBI_ADC_analyze$New, levels = 12:1)
-COMBI_plot$New
 
 x0 <- ggplot(COMBI_plot, aes(x = reorder(New, -New), fill = Mut)) +
   geom_bar(position = "stack", col = "white") +
@@ -3623,19 +3153,8 @@ x0 <- ggplot(COMBI_plot, aes(x = reorder(New, -New), fill = Mut)) +
     legend.position = "none"
   )
 
-x0
-
-
-# # 1) Build a single canonical gene ordering from COMBI_plot3 (adjust asc/desc below if you prefer)
-# gene_levels <- COMBI_plot3 %>%
-#   distinct(Gene, .keep_all = TRUE) %>%
-#   arrange(cross) %>%    # ascending ORDER: smallest PROP -> bottom ; largest -> top
-#   pull(Gene)%>%head(50)
-COMBI_plot3$cross
 
 library(dplyr)
-
-#COMBI_plot_selection2ADC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_SCC_analyze$Gene,]
 gene_levels <- COMBI_plot_selection %>%
   filter(cross > 2) %>%
   dplyr::select(Gene)
@@ -3644,16 +3163,7 @@ gene_levels_adc <- gene_levels$Gene
 
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
 
-
-
-# 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
 x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as.numeric(COMBI_plot3$cross))))) +
   geom_col(width = 1, fill = "black",col="white") +          # change fill if you want a different color
   #  facet_grid(. ~ New, switch = "x") +             # same faceting as x2 so columns align
@@ -3671,35 +3181,27 @@ x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as
     axis.text.y = element_text(angle = 0, size = 12)# hide duplicate gene labels (keep them in x2 if desired)
   )
 
-x1_clean
-# Force factor levels 1–12 in both data frames
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
 COMBI_plot2$New <- factor(COMBI_plot2$New, levels = 1:12)
 
 
-# Création de la grille complète
 complete_data <- expand_grid(
   Cancer = unique(COMBI_plot2$Cancer),
   Gene = unique(COMBI_plot2$Gene),
   New = c("1","2","3","4","5","6","7","8","9","10","11","12")
 )
 
-#View(COMBI_plot2_filled)
-# Fusion avec les vraies données
+
 COMBI_plot2_filled <- complete_data %>%
   left_join(COMBI_plot2, by = c("Cancer", "Gene", "New")) %>%
   mutate(x_label = paste(New, Cancer, sep = "_"))
 
 as.numeric(as.factor(COMBI_plot2_filled$Gene))
 
-# Heatmap avec quadrillage continu (sans facette)
-
 COMBI_plot2_filled <- COMBI_plot2_filled %>%
   mutate(
     Gene = factor(Gene, levels = unique(Gene[order(-cross,Gene)]))
   )
-
-COMBI_plot2_filled
 
 x2_clean <- ggplot(COMBI_plot2_filled, aes(
   x = factor(reorder(x_label,-as.numeric(New))),
@@ -3721,21 +3223,8 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
   )
 
 
-x2_clean
-
-dev.off()
-
-
-
-
-
-
-# 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
 x0_clean <- x0 + theme(legend.position = "none")
 
-# 4) Layout:
-# top row = x0 | spacer
-# bottom row = x2 | x1
 top_row    <- plot_spacer()|x1_clean   # spacer prevents x1 from spanning up
 top_row2<-top_row+plot_layout( widths = c(4, 17), guides = "collect") 
 bottom_row <- x0_clean | x2_clean
@@ -3750,18 +3239,11 @@ final_plot
 
 ggsave("CADD_ADC_total_mutations.pdf", plot = final_plot, width = 14, height = 6, limitsize = FALSE, device = 'pdf', dpi = 300)
 
-
-#############################################
-#############################################
-#############################################
-
-
-
 ############################################################################################################
 #####################################      SCC    ##########################################################
 ############################################################################################################
 ############################################################################################################
-#####
+
 
 COMBI_plot <- COMBI_SCC_analyze
 COMBI_plot2<-unique(COMBI_plot[,c("New","Cancer","Gene","FillColor","cross")])
@@ -3770,15 +3252,8 @@ COMBI_plot_selection<-unique(COMBI_plot[,c("Gene","cross")])
 
 COMBI_plot4<-data.frame(New=c(1:12),VC=c(1:12))
 
-
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
-COMBI_SCC_analyze$New <- factor(COMBI_SCC_analyze$New, levels = 1:12)
-COMBI_plot$Mut
-library(dplyr)
-library(tidyr)
-library(ggplot2)
 
-# On force New comme numérique de 1 à 12 et on complète
 COMBI_plot <- COMBI_plot %>%
   mutate(New = as.numeric(New)) %>%
   group_by(New, Mut) %>%
@@ -3788,7 +3263,6 @@ COMBI_plot <- COMBI_plot %>%
     fill = list(Mut_num = 0)
   )
 
-# Graphique
 x0 <- ggplot(COMBI_plot, aes(x = reorder(factor(New),-New), y = Mut_num, fill = Mut)) +
   geom_col(col = "white") +
   coord_flip() +  # barres horizontales
@@ -3814,23 +3288,6 @@ x0 <- ggplot(COMBI_plot, aes(x = reorder(factor(New),-New), y = Mut_num, fill = 
     legend.position = "none"
   )
 
-x0
-
-
-
-# # 1) Build a single canonical gene ordering from COMBI_plot3 (adjust asc/desc below if you prefer)
-# gene_levels <- COMBI_plot3 %>%
-#   distinct(Gene, .keep_all = TRUE) %>%
-#   arrange(cross) %>%    # ascending ORDER: smallest PROP -> bottom ; largest -> top
-#   pull(Gene)%>%head(50)
-COMBI_plot3$cross
-
-library(dplyr)
-COMBI_SCC_analyze
-
-#COMBI_plot_selection2SCC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_SCC_analyze$Gene,]
-
-
 
 gene_levels <- COMBI_SCC_analyze %>%
   filter(cross > 2) %>%
@@ -3840,16 +3297,8 @@ gene_levels_SCC <- gene_levels$Gene
 
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
 
 
-
-# 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
 x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as.numeric(COMBI_plot3$cross))))) +
   geom_col(width = 1, fill = "black",col="white") +          # change fill if you want a different color
   #  facet_grid(. ~ New, switch = "x") +             # same faceting as x2 so columns align
@@ -3867,7 +3316,7 @@ x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as
     axis.text.y = element_text(angle = 0, size = 12)# hide duplicate gene labels (keep them in x2 if desired)
   )
 
-x1_clean
+
 # Force factor levels 1–12 in both data frames
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
 COMBI_plot2$New <- factor(COMBI_plot2$New, levels = 1:12)
@@ -3886,8 +3335,6 @@ COMBI_plot2_filled <- complete_data %>%
   left_join(COMBI_plot2, by = c("Cancer", "Gene", "New")) %>%
   mutate(x_label = paste(New, Cancer, sep = "_"))
 
-as.numeric(as.factor(COMBI_plot2_filled$Gene))
-
 # Heatmap avec quadrillage continu (sans facette)
 
 COMBI_plot2_filled <- COMBI_plot2_filled %>%
@@ -3895,7 +3342,6 @@ COMBI_plot2_filled <- COMBI_plot2_filled %>%
     Gene = factor(Gene, levels = unique(Gene[order(-cross,Gene)]))
   )
 
-COMBI_plot2_filled
 
 x2_clean <- ggplot(COMBI_plot2_filled, aes(
   x = factor(reorder(x_label,-as.numeric(New))),
@@ -3915,15 +3361,6 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
     axis.text.y = element_blank(),
     panel.grid = element_blank()
   )
-
-
-x2_clean
-
-dev.off()
-
-
-
-
 
 
 # 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
@@ -3947,7 +3384,6 @@ final_plot <- top_row2 / bottom_row2 +
 final_plot
 
 ggsave("CADD_SCC_total_mutations.pdf", plot = final_plot, width = 10, height = 6, limitsize = FALSE, device = 'pdf', dpi = 300)
-ggsave("CADD_SCC_total_mutations2.pdf", plot = final_plot, width = 14, height = 6, limitsize = FALSE, device = 'pdf', dpi = 300)
 
 COMBI_plot3_SCC<-COMBI_plot3
 
@@ -3958,14 +3394,14 @@ COMBI_plot3_SCC<-COMBI_plot3
 
 ###########################
 # ==================== 1. Conversion SYMBOL → ENTREZ ====================
-message("Conversion des gènes SYMBOL en ENTREZID...")
+
 gene_df <- bitr(COMBI_SCC_analyze$Gene,
                 fromType = "SYMBOL",
                 toType   = "ENTREZID",
                 OrgDb    = org.Hs.eg.db)
 
 # ==================== 2. Enrichissement KEGG ====================
-message("Lancement de l'enrichissement KEGG...")
+
 kegg_enrich <- enrichKEGG(
   gene         = gene_df$ENTREZID,
   organism     = 'hsa',
@@ -4037,14 +3473,12 @@ ggsave("CADD_mutations_SCC_total_mutations_barplot.pdf",
 
 ###########################
 # ==================== 1. Conversion SYMBOL → ENTREZ ====================
-message("Conversion des gènes SYMBOL en ENTREZID...")
 gene_df <- bitr(COMBI_ADC_analyze$Gene,
                 fromType = "SYMBOL",
                 toType   = "ENTREZID",
                 OrgDb    = org.Hs.eg.db)
 
 # ==================== 2. Enrichissement KEGG ====================
-message("Lancement de l'enrichissement KEGG...")
 kegg_enrich <- enrichKEGG(
   gene         = gene_df$ENTREZID,
   organism     = 'hsa',
@@ -4111,7 +3545,6 @@ ggsave("CADD_mutations_ADC_total_genes_barplot.pdf",
        width = 14, height = 6,
        limitsize = FALSE, device = 'pdf', dpi = 300)
 
-message("✅ Script terminé.")
 
 bottom_row2
 COMBI_plot3_join$genes<-gsub("(\\d+)\\/\\d+")
@@ -4225,13 +3658,10 @@ COMBI_plot <- COMBI_ADC_analyze
 COMBI_plot2<-unique(COMBI_plot[,c("New","Cancer","Gene","FillColor","cross")])
 COMBI_plot3<-unique(COMBI_plot[,c("Gene","cross")])
 COMBI_plot_selection<-unique(COMBI_plot[,c("Gene","cross")])
-
 COMBI_plot4<-data.frame(New=c(12:1),VC=c(12:1))
-
-
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 12:1)
 COMBI_ADC_analyze$New <- factor(COMBI_ADC_analyze$New, levels = 12:1)
-COMBI_plot$New
+
 
 x0 <- ggplot(COMBI_plot, aes(x = reorder(New, -New), fill = Mut)) +
   geom_bar(position = "stack", col = "white") +
@@ -4262,19 +3692,6 @@ x0 <- ggplot(COMBI_plot, aes(x = reorder(New, -New), fill = Mut)) +
     legend.position = "none"
   )
 
-x0
-
-
-# # 1) Build a single canonical gene ordering from COMBI_plot3 (adjust asc/desc below if you prefer)
-# gene_levels <- COMBI_plot3 %>%
-#   distinct(Gene, .keep_all = TRUE) %>%
-#   arrange(cross) %>%    # ascending ORDER: smallest PROP -> bottom ; largest -> top
-#   pull(Gene)%>%head(50)
-COMBI_plot3$cross
-
-library(dplyr)
-
-#COMBI_plot_selection2ADC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_SCC_analyze$Gene,]
 gene_levels <- COMBI_plot_selection %>%
   filter(cross > 2) %>%
   dplyr::select(Gene)
@@ -4283,14 +3700,6 @@ gene_levels_adc <- gene_levels$Gene
 
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-
-
 
 # 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
 x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as.numeric(COMBI_plot3$cross))))) +
@@ -4310,35 +3719,25 @@ x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as
     axis.text.y = element_text(angle = 0, size = 12)# hide duplicate gene labels (keep them in x2 if desired)
   )
 
-x1_clean
-# Force factor levels 1–12 in both data frames
+
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
 COMBI_plot2$New <- factor(COMBI_plot2$New, levels = 1:12)
 
-
-# Création de la grille complète
 complete_data <- expand_grid(
   Cancer = unique(COMBI_plot2$Cancer),
   Gene = unique(COMBI_plot2$Gene),
   New = c("1","2","3","4","5","6","7","8","9","10","11","12")
 )
 
-#View(COMBI_plot2_filled)
-# Fusion avec les vraies données
+
 COMBI_plot2_filled <- complete_data %>%
   left_join(COMBI_plot2, by = c("Cancer", "Gene", "New")) %>%
   mutate(x_label = paste(New, Cancer, sep = "_"))
-
-as.numeric(as.factor(COMBI_plot2_filled$Gene))
-
-# Heatmap avec quadrillage continu (sans facette)
 
 COMBI_plot2_filled <- COMBI_plot2_filled %>%
   mutate(
     Gene = factor(Gene, levels = unique(Gene[order(-cross,Gene)]))
   )
-
-COMBI_plot2_filled
 
 x2_clean <- ggplot(COMBI_plot2_filled, aes(
   x = factor(reorder(x_label,-as.numeric(New))),
@@ -4358,15 +3757,6 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
     axis.text.y = element_blank(),
     panel.grid = element_blank()
   )
-
-
-x2_clean
-
-dev.off()
-
-
-
-
 
 
 # 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
@@ -4392,12 +3782,6 @@ final_plot
 ggsave("CADD_GENES_ADC_total_genes.pdf", plot = final_plot, width = 14, height = 6, limitsize = FALSE, device = 'pdf', dpi = 300)
 
 
-#############################################
-#############################################
-#############################################
-
-
-
 ############################################################################################################
 #####################################      SCC    ##########################################################
 ############################################################################################################
@@ -4414,12 +3798,8 @@ COMBI_plot4<-data.frame(New=c(1:12),VC=c(1:12))
 
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
 COMBI_SCC_analyze$New <- factor(COMBI_SCC_analyze$New, levels = 1:12)
-COMBI_plot$Mut
-library(dplyr)
-library(tidyr)
-library(ggplot2)
 
-# On force New comme numérique de 1 à 12 et on complète
+
 COMBI_plot <- COMBI_plot %>%
   mutate(New = as.numeric(New)) %>%
   group_by(New, Mut) %>%
@@ -4429,7 +3809,7 @@ COMBI_plot <- COMBI_plot %>%
     fill = list(Mut_num = 0)
   )
 
-# Graphique
+
 x0 <- ggplot(COMBI_plot, aes(x = reorder(factor(New),-New), y = Mut_num, fill = Mut)) +
   geom_col(col = "white") +
   coord_flip() +  # barres horizontales
@@ -4455,24 +3835,6 @@ x0 <- ggplot(COMBI_plot, aes(x = reorder(factor(New),-New), y = Mut_num, fill = 
     legend.position = "none"
   )
 
-x0
-
-
-
-# # 1) Build a single canonical gene ordering from COMBI_plot3 (adjust asc/desc below if you prefer)
-# gene_levels <- COMBI_plot3 %>%
-#   distinct(Gene, .keep_all = TRUE) %>%
-#   arrange(cross) %>%    # ascending ORDER: smallest PROP -> bottom ; largest -> top
-#   pull(Gene)%>%head(50)
-COMBI_plot3$cross
-
-library(dplyr)
-COMBI_SCC_analyze
-
-#COMBI_plot_selection2SCC<-COMBI_plot_selection[!COMBI_plot_selection$Gene%in%COMBI_SCC_analyze$Gene,]
-
-
-
 gene_levels <- COMBI_SCC_analyze %>%
   filter(cross > 2) %>%
   dplyr::select(Gene)
@@ -4481,14 +3843,6 @@ gene_levels_SCC <- gene_levels$Gene
 
 COMBI_plot2<-COMBI_plot2[COMBI_plot2$Gene%in%gene_levels$Gene,]
 COMBI_plot3<-COMBI_plot3[COMBI_plot3$Gene%in%gene_levels$Gene,]
-# COMBI_plot3
-# COMBI_plot2 <- COMBI_plot2 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-# 
-# COMBI_plot3 <- COMBI_plot3 %>%
-#   mutate(Gene = factor(Gene, levels = gene_levels))
-
-
 
 # 2) Rebuild x1 and x2 so they use y = Gene (the factor) instead of reorder()
 x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as.numeric(COMBI_plot3$cross))))) +
@@ -4508,35 +3862,24 @@ x1_clean <- ggplot(COMBI_plot3, aes(x = cross, y = reorder(COMBI_plot3$Gene,(-as
     axis.text.y = element_text(angle = 0, size = 12)# hide duplicate gene labels (keep them in x2 if desired)
   )
 
-x1_clean
-# Force factor levels 1–12 in both data frames
 COMBI_plot4$New <- factor(COMBI_plot4$New, levels = 1:12)
 COMBI_plot2$New <- factor(COMBI_plot2$New, levels = 1:12)
 
-
-# Création de la grille complète
 complete_data <- expand_grid(
   Cancer = unique(COMBI_plot2$Cancer),
   Gene = unique(COMBI_plot2$Gene),
   New = c("1","2","3","4","5","6","7","8","9","10","11","12")
 )
 
-#View(COMBI_plot2_filled)
-# Fusion avec les vraies données
 COMBI_plot2_filled <- complete_data %>%
   left_join(COMBI_plot2, by = c("Cancer", "Gene", "New")) %>%
   mutate(x_label = paste(New, Cancer, sep = "_"))
-
-as.numeric(as.factor(COMBI_plot2_filled$Gene))
-
-# Heatmap avec quadrillage continu (sans facette)
 
 COMBI_plot2_filled <- COMBI_plot2_filled %>%
   mutate(
     Gene = factor(Gene, levels = unique(Gene[order(-cross,Gene)]))
   )
 
-COMBI_plot2_filled
 
 x2_clean <- ggplot(COMBI_plot2_filled, aes(
   x = factor(reorder(x_label,-as.numeric(New))),
@@ -4557,27 +3900,11 @@ x2_clean <- ggplot(COMBI_plot2_filled, aes(
     panel.grid = element_blank()
   )
 
-
-x2_clean
-
-dev.off()
-
-
-
-
-
-
-# 3) Prepare x0: remove its legend (we'll collect a single legend from x2_clean)
 x0_clean <- x0 + theme(legend.position = "none")
 
-# 4) Layout:
-# top row = x0 | spacer
-# bottom row = x2 | x1
 top_row    <- plot_spacer()|x1_clean   # spacer prevents x1 from spanning up
 top_row2<-top_row+plot_layout( widths = c(4, 17), guides = "collect") 
-top_row2
 bottom_row <- x0_clean | x2_clean
-bottom_row2
 bottom_row2<-bottom_row+plot_layout( widths = c(3, 15), guides = "collect") 
 
 final_plot <- top_row2 / bottom_row2 +
@@ -4600,21 +3927,18 @@ COMBI_plot3_SCC<-COMBI_plot3
 
 ###########################
 # ==================== 1. Conversion SYMBOL → ENTREZ ====================
-message("Conversion des gènes SYMBOL en ENTREZID...")
 gene_df <- bitr(COMBI_SCC_analyze$Gene,
                 fromType = "SYMBOL",
                 toType   = "ENTREZID",
                 OrgDb    = org.Hs.eg.db)
 
 # ==================== 2. Enrichissement KEGG ====================
-message("Lancement de l'enrichissement KEGG...")
 kegg_enrich <- enrichKEGG(
   gene         = gene_df$ENTREZID,
   organism     = 'hsa',
   pvalueCutoff = 0.05
 )
 
-# Rendre les résultats lisibles (ENTREZ → SYMBOL)
 kegg_annotated <- setReadable(kegg_enrich, OrgDb = org.Hs.eg.db, keyType = "ENTREZID")
 kegg_df <- as.data.frame(kegg_annotated)
 
@@ -4632,8 +3956,6 @@ dev.off()
 
 
 # ==================== 5. Jointure gènes enrichis/pathways ====================
-message("Jointure avec les gènes CADD_COMBI...")
-
 df_merged_SCC <- inner_join(COMBI_SCC, pathway_gene_df, by = c("Gene" = "GeneSymbol"))
 
 # Comptage par pathway
@@ -4676,17 +3998,13 @@ ggsave("CADD_GENES_SCC_total_genes_barplot.pdf",
 
 
 #######################################################################################################
-
-###########################
 # ==================== 1. Conversion SYMBOL → ENTREZ ====================
-message("Conversion des gènes SYMBOL en ENTREZID...")
 gene_df <- bitr(COMBI_ADC_analyze$Gene,
                 fromType = "SYMBOL",
                 toType   = "ENTREZID",
                 OrgDb    = org.Hs.eg.db)
 
 # ==================== 2. Enrichissement KEGG ====================
-message("Lancement de l'enrichissement KEGG...")
 kegg_enrich <- enrichKEGG(
   gene         = gene_df$ENTREZID,
   organism     = 'hsa',
@@ -4712,8 +4030,6 @@ dev.off()
 
 
 # ==================== 5. Jointure gènes enrichis/pathways ====================
-message("Jointure avec les gènes CADD_COMBI...")
-
 df_merged_ADC <- inner_join(COMBI_ADC, pathway_gene_df, by = c("Gene" = "GeneSymbol"))
 
 # Comptage par pathway
@@ -4752,24 +4068,6 @@ ggsave("CADD_GENES_ADC_total_genes_barplot.pdf",
        plot = bottom_row2,
        width = 14, height = 6,
        limitsize = FALSE, device = 'pdf', dpi = 300)
-
-message("✅ Script terminé.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4866,7 +4164,6 @@ for (i in 1:length(unique(combined_muts$Paire))){
 }
 
 
-####
 Result3 <- Result_SNPs[Result_SNPs$statut != "CTR",]
 
   
@@ -5028,7 +4325,7 @@ combi_row <- TMB_plot1 + TMB_plot2 + TMB_plot3 + TMB_plot4+
 combi_row
 
 # Save the plot
-ggsave("17_TMB_plot_by_Strain2_FULLs_select.pdf", width = 12, height = 6, dpi = 300)
+ggsave("TMB_plot_by_Strain2_FULLs_select.pdf", width = 12, height = 6, dpi = 300)
 
 
 
